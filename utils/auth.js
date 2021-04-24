@@ -43,7 +43,6 @@ const jwtOptions = {
     expiresIn: 60 * 60 * 24 * 7, // 1 week
 };
 
-
 module.exports = {
     authMsg,
     jwtAlgorithm,
