@@ -23,3 +23,31 @@ To run
 ```bash
 npm start
 ```
+
+
+## Structure
+### config
+Contains reusables keys such as endpoints
+### db
+Configuration of the app level database
+### main
+Contains endpoints and main functionality of the app.
+- #### auth
+login, jwt autentication, registration, 
+- #### clout
+give clout, browse clout, clout rewards
+- #### liquidity
+add liquidity, swap liquidity, stake tokens, mint / distribute tokens
+- #### profile
+change alias, change photo
+- #### value
+give value, browse values, value rewards
+
+### models
+Contains models for the app level database
+
+### middleware
+Contains helper functions that can be reused throughout the app
+
+### middleware
+Not sure if we should keep this one
