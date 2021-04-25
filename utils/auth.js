@@ -48,6 +48,8 @@ const isValidSignature = (ethAddress, nonce, chainId, signature) => {
   return recoveredCheckSum === providedCheckSum;
 };
 
+// TODO add custom options to allow different messaging
+// for example separate GIVE and GET messaging.
 const authMiddleware = async (req, res, next) => {
   try {
     const { signature, ethAddress, chainId } = req.body || req.query;
