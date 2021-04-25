@@ -40,9 +40,7 @@ router.get('/api/auth/login', async (req, res) => {
 
 router.post('/api/auth/login', async (req, res) => {
   try {
-    const { signature } = req.body;
-    const { ethAddress } = req.body;
-    const { chainId } = req.body;
+    const { signature, ethAddress, chainId } = req.body;
     const member = await ApiMember.findOne({
       where: { ethAddress },
     });
