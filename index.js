@@ -1,5 +1,5 @@
 require('dotenv').config({ path: __dirname + '/.env' })
-
+const _ = require('lodash');
 const express = require('express');
 const expressJwt = require('express-jwt');
 const bodyParser = require('body-parser');
@@ -107,7 +107,7 @@ app.get('/api/secret', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Started ${process.env.APP_NAME} on port: ${port}`);
+    console.log(`Started default-backend on port: ${port}`);
 });
 
 module.exports = {

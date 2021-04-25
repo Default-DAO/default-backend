@@ -1,6 +1,9 @@
 const sigUtil = require('eth-sig-util');
 const ethUtil = require('ethereumjs-util');
 
+const isCheckSumAddress = (ethAddress) =>
+    ethUtil.toChecksumAddress(ethAddress) === ethAddress;
+
 const isValidSignature = (ethAddress, nonce, chainId, signature) => {
     let signedMsg = authMsg;
     signedMsg.domain.chainId = chainId;
@@ -11,8 +14,12 @@ const isValidSignature = (ethAddress, nonce, chainId, signature) => {
         sig: signature,
     });
 
-    return ethUtil.toChecksumAddress(recovered) === ethUtil.toChecksumAddress(ethAddress);
+    const recoveredCheckSum = ethUtil.toChecksumAddress(recovered);
+    const providedCheckSum = ethUtil.toChecksumAddress(ethAddress);
+
+    return recoveredCheckSum === providedCheckSum;
 }
+
 
 const authMsg = {
     domain: {
@@ -22,6 +29,9 @@ const authMsg = {
         version: 'alpha',
     },
     message: {
+        content: 'Hi there from Ðefault! Sign this message to prove you '
+            + 'have access to this wallet and we’ll log you in. '
+            + 'This won’t cost you any Ether.', // TODO find easy way to preserve UI message while setting nonce.
         nonce: null,
     },
     primaryType: 'Nonce',
@@ -44,6 +54,7 @@ const jwtOptions = {
 };
 
 module.exports = {
+    isCheckSumAddress,
     authMsg,
     jwtAlgorithm,
     jwtOptions,

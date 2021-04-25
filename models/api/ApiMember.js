@@ -11,7 +11,7 @@ const ApiMember = sequelize.define('Api_Member', {
         references: {
             model: 'Tx_Members',
             key: 'eth_address',
-        }
+        },
     },
     alias: {
         field: "alias",
