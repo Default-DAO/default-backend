@@ -6,14 +6,15 @@ const {
     isValidSignature,
     jwtOptions
 } = require('./utils');
-const { rateLimiter } = require('../../middleware/rateLimiter');
+const { rateLimiter } = require('../../utils/rateLimiter');
 const { ApiMember } = require('../../models/api/ApiMember');
+
 const router = require('express').Router(); 
 
 // limit repeated failed requests to login endpoint
-router.use('/api/login', rateLimiter);
+router.use('/api/auth/login', rateLimiter);
 
-router.get('/api/login', async (req, res) => {
+router.get('/api/auth/login', async (req, res) => {
     try {
         const apiMember = await ApiMember.findOne({
             where: { ethAddress: req.query.ethAddress }
@@ -44,7 +45,7 @@ router.get('/api/login', async (req, res) => {
     }
 });
 
-router.post('/api/login', async (req, res) => {
+router.post('/api/auth/login', async (req, res) => {
     try {
         const signature = req.body.signature;
         const ethAddress = req.body.ethAddress;
@@ -101,7 +102,7 @@ router.post('/api/login', async (req, res) => {
 });
 
 // if you can get a response you are successfully authed
-router.get('/api/secret', async (req, res) => {
+router.get('/api/auth/secret', async (req, res) => {
     res.send({ result: { success: true, error: false } });
     return;
 });

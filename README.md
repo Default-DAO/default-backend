@@ -46,8 +46,5 @@ give value, browse values, value rewards
 ### models
 Contains models for the app level database
 
-### middleware
+### utils
 Contains helper functions that can be reused throughout the app
-
-### middleware
-Not sure if we should keep this one
