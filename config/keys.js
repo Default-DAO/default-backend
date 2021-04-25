@@ -1,6 +1,8 @@
-//endpoints
-const GET_USER = '/user'
+//error codes
+const INVALID_SIGNATURE = 'invalidSignature';
+const NOT_WHITELISTED = 'notWhitelisted';
 
 module.exports = {
-    GET_USER
+    INVALID_SIGNATURE,
+    NOT_WHITELISTED,
 };
