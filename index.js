@@ -33,15 +33,15 @@ app.use('/api/login', rateLimiter);
 
 app.get('/api/login', async (req, res) => {
     try {
-        const member = await ApiMember.findOne({
+        const apiMember = await ApiMember.findOne({
             where: { ethAddress: req.query.ethAddress }
         });
 
-        if (member) {
+        if (apiMember) {
             res.send({
                 result: {
                     authMsg: Object.assign(authMsg,
-                        { message: { nonce: member.nonce } }
+                        { message: { nonce: apiMember.nonce } }
                     ),
                     error: false,
                 }
@@ -78,10 +78,28 @@ app.post('/api/login', async (req, res) => {
                     process.env.SECRET,
                     jwtOptions
                 );
+                const apiMember = await ApiMember.findOne({
+                    where: { ethAddress: ethAddress }
+                });
+
                 await ApiMember.update({ nonce: uuid.v4() }, {
                     where: { ethAddress }
                 });
-                res.send({ result: { token, error: false } });
+
+                console.log(`apiMember === ${JSON.stringify(apiMember)}`);
+
+                // todo find sequlize serialization lib
+                res.send({
+                    result: {
+                        apiMember: {
+                            ethAddress: apiMember.ethAddress,
+                            alias: apiMember.alias,
+                            createdEpoch: apiMember.createdEpoch,
+                        },
+                        token,
+                        error: false,
+                    }
+                });
                 return;
 
             } else {
