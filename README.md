@@ -23,9 +23,42 @@ To run
 ```bash
 npm start
 ```
+# Endspoints
+- ### auth
+| Endpoint  | Type | Description
+| ------------- | ------------- | ------------- |
+| /api/auth/login  | Get  |   |
+| /api/auth/login  | Post  |   |
+| /api/auth/secret  | Get  |   |
+
+- ### liquidity
+| Endpoint  | Type | Description
+| ------------- | ------------- | ------------- |
+| /api/liquidity  | Get  |   |
+| /api/liquidity/add  | Post  |   |
+| /api/liquidity/swap  | Post  |   |
+| /api/liquidity/stake  | Post  |   |
+
+- ### clout
+| Endpoint  | Type | Description
+| ------------- | ------------- | ------------- |
+| /api/clout  | Get  |   |
+| /api/clout  | Post  |   |
+
+- ### value
+| Endpoint  | Type | Description
+| ------------- | ------------- | ------------- |
+| /api/value  | Get  |   |
+| /api/value  | Post  |   |
+
+- ### profile
+| Endpoint  | Type | Description
+| ------------- | ------------- | ------------- |
+| /api/profile/image  | Put  |   |
+| /api/profile/alias  | Put  |   |
 
 
-## Structure
+# Structure
 ### config
 Contains reusables keys such as endpoints
 ### db
