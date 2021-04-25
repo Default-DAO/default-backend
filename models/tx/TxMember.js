@@ -19,6 +19,11 @@ const TxMember = sequelize.define('Tx_Member', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+}, {
+  indexes: [
+    { unique: true, fields: ['eth_address'] },
+    { fields: ['created_epoch'] },
+  ],
 });
 
 module.exports = {
