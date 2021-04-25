@@ -1,5 +1,9 @@
 const sigUtil = require('eth-sig-util');
 const ethUtil = require('ethereumjs-util');
+const uuid = require('uuid');
+
+const { INVALID_SIGNATURE } = require('../config/keys');
+const { ApiMember } = require('../models/api/apiMember');
 
 const isCheckSumAddress = (ethAddress) => ethUtil.toChecksumAddress(ethAddress) === ethAddress;
 
@@ -44,17 +48,36 @@ const isValidSignature = (ethAddress, nonce, chainId, signature) => {
   return recoveredCheckSum === providedCheckSum;
 };
 
-const jwtAlgorithm = 'HS256';
+const authMiddleware = async (req, res, next) => {
+  try {
+    const { signature, ethAddress, chainId } = req.body || req.query;
+    const member = await ApiMember.findOne({
+      where: { ethAddress },
+    });
 
-const jwtOptions = {
-  algorithm: jwtAlgorithm,
-  expiresIn: 60 * 60 * 24 * 7, // 1 week
+    if (member && isValidSignature(ethAddress, member.nonce, chainId, signature)) {
+      ApiMember.update({ nonce: uuid.v4() }, {
+        where: { id: member.id },
+      }); // TODO do we need await here??
+
+      next();
+    } else {
+      res.send({
+        result: {
+          error: true,
+          errorCode: INVALID_SIGNATURE,
+        },
+      });
+      return;
+    }
+  } catch (err) {
+    res.status(400).send(err);
+  }
 };
 
 module.exports = {
   isCheckSumAddress,
   authMsg,
-  jwtAlgorithm,
-  jwtOptions,
   isValidSignature,
+  authMiddleware,
 };
