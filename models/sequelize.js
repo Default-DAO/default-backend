@@ -7,6 +7,7 @@ if (process.env.NODE_ENV === 'development') {
     logging: true,
     storage: 'db.sqlite',
   });
+  sequelize.sync();
   // sequelize.sync({ force: true }); // This will wipe DB everytime you restart
 } else {
   sequelize = new Sequelize(process.env.DATABASE_URI, process.env.DATABASE_USERNAME, null, {

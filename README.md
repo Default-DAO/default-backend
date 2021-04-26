@@ -8,8 +8,8 @@ PORT=8000
 
 You'll need to manually add users to the DB first. Here's a template:
 ```javascript
-const { ApiMember } = require('./models/api/ApiMember');
-const { TxMember } = require('./models/tx/TxMember');
+const { ApiMember } = require('./models/api/apiMember');
+const { TxMember } = require('./models/tx/txMember');
 
 TxMember.create({ ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2', type: 'PERSONAL', createdEpoch: 0 })
 ApiMember.create({ ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2', alias: 'z', createdEpoch: 0 })
