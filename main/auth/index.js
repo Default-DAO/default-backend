@@ -1,6 +1,6 @@
 const router = require('express').Router();
 
-const { NOT_WHITELISTED } = require('../../config/keys');
+const { NOT_WHITELISTED, BAD_REQUEST } = require('../../config/keys');
 const { authMsg, authMiddleware } = require('../../utils/auth');
 const { rateLimiter } = require('../../utils/rateLimiter');
 const { ApiMember } = require('../../models/api/apiMember');
@@ -33,7 +33,12 @@ router.get('/api/auth', async (req, res) => {
     });
     return;
   } catch (err) {
-    res.status(400).send(err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCodde: BAD_REQUEST,
+      },
+    });
   }
 });
 
