@@ -15,11 +15,12 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation
   toEthAddress: {
     field: 'to_eth_address',
     type: DataTypes.STRING,
-    unique: 'fromEthAddressAndtoEthAddress'
+    unique: 'fromEthAddressAndtoEthAddress',
     references: {
       model: 'Tx_Member',
       key: 'eth_address',
     },
+  },
   epoch: {
     field: 'epoch',
     type: DataTypes.INTEGER,
@@ -31,13 +32,14 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation
     type: DataTypes.INTEGER,
     allowNull: false
   }
-}, {
-  indexes: [
-    { fields: ['from_eth_address'] },
-    { fields: ['to_eth_address'] },
-    { fields: ['epoch'] },
-  ],
-});
+ }, { 
+    indexes: [
+      { fields: ['from_eth_address'] },
+      { fields: ['to_eth_address'] },
+      { fields: ['epoch'] },
+    ]
+  }
+);
 
 TxConfigureValueAllocation.belongsTo(TxMember, { foreignKey: 'eth_address' });
 

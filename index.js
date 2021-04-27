@@ -8,7 +8,7 @@ const profile = require('./main/profile');
 const allocation = require('./main/contracts/ctAllocation');
 const network = require('./main/contracts/ctNetwork');
 const pools = require('./main/contracts/ctPools');
-const staking = require('./main/contracts/ctStaking');
+const staking = require('./main/contracts/ctDelegation');
 
 const port = process.env.PORT;
 const app = express();

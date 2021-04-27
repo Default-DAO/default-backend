@@ -37,7 +37,7 @@ const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation
 }, {
   indexes: [
     { fields: ['from_eth_address'] },
-    { fields: ['to_eth_address']}
+    { fields: ['to_eth_address']},
     { fields: ['epoch'] },
   ],
 });

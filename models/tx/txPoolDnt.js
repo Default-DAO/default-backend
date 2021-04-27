@@ -43,5 +43,5 @@ TxLiquidityDnt.belongsTo(TxMember, { foreignKey: 'eth_address' });
  */
 
 module.exports = {
-  TxLiquidityDnt,
+  TxPoolDnt,
 };
