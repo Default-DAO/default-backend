@@ -9,7 +9,7 @@ const ApiMember = sequelize.define('Api_Member', {
     field: 'eth_address',
     type: DataTypes.STRING,
     references: {
-      model: 'Tx_Members',
+      model: 'Tx_Member',
       key: 'eth_address',
     },
   },
