@@ -2,8 +2,9 @@
 
 Right now locally it's running on SQLite.
 Create an .env file in the top level project directory and set:
-SECRET=anythingyouwantfornow
-PORT=8000
+* SECRET=anythingyouwantfornow
+* PORT=8000
+* NODE_ENV=development
 
 
 You'll need to manually add users to the DB first. Here's a template:
@@ -15,7 +16,10 @@ TxMember.create({ ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2', type
 ApiMember.create({ ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2', alias: 'z', createdEpoch: 0 })
 ```
 
-Make sure ethAddress is formatted as a checksum ethereum address.
+Make sure ethAddress is formatted as a checksum ethereum address. THIS IS REALLY IMPORTANT.
+
+Before saving an ethAddress to DB format it here:
+https://ethsum.netlify.app/
 
 
 To run
