@@ -3,11 +3,21 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxDelegationNetworkValue = sequelize.define('Tx_DelegationNetworkVALUE', {
-  ethAddress: {
-    field: 'eth_address',
+const TxCloutDelegation = sequelize.define('Tx_Clout_Delegation', {
+  fromEthAddress: {
+    field: 'from_eth_address',
     type: DataTypes.STRING,
-    unique: 'ethAdressAndEpoch',
+    allowNull: false,
+    references: {
+      model: 'Tx_Members',
+      key: 'eth_address',
+    },
+  },
+  toEthAddress: {
+    field: 'to_eth_address',
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: 'fromEthAdressAndtoEthAddress', // does this work? trying to make it so you can't self delegate.
     references: {
       model: 'Tx_Members',
       key: 'eth_address',
@@ -19,11 +29,11 @@ const TxDelegationNetworkValue = sequelize.define('Tx_DelegationNetworkVALUE', {
     allowNull: false,
     unique: 'ethAdressAndEpoch',
   },
-  delegations: {
-    field: 'delegations',
-    type: DataTypes.JSON,
-    allowNull: false,
-  },
+  weight: {
+    field: 'weight',
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
   /*
   delegations field example. eth_address_x will be a pk from the member table.
   {
@@ -34,7 +44,8 @@ const TxDelegationNetworkValue = sequelize.define('Tx_DelegationNetworkVALUE', {
   */
 }, {
   indexes: [
-    { fields: ['eth_address'] },
+    { fields: ['from_eth_address'] },
+    { fields: ['to_eth_address']}
     { fields: ['epoch'] },
   ],
 });
