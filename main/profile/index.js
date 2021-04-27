@@ -65,7 +65,6 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
         totalRewardsEarned,
         netGain,
         netPosition,
-        claimed,
         cap,
       } = member; // TODO find sequelize serializer
 
@@ -103,7 +102,7 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
               totalRewardsEarned,
               netGain,
               netPosition,
-              claimed,
+              claimed: true,
               cap,
             },
             error: false, // TODO use wrapper to return every response so we can standardize
