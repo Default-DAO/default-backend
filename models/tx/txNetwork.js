@@ -5,7 +5,8 @@ const TxNetwork = sequelize.define('Tx_Network', {
   epochNumber: {
     field: 'epoch_number',
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    primaryKey: true // increment the primaryKey by 1 each time
   },
   withdrawFeeDnt: { // fee applied to all DNT Liquidity withdrawls this epoch 
     field: 'DNT_liquidity_withdraw_fee',
