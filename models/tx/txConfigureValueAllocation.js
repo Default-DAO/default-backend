@@ -3,12 +3,12 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxValueAllocation = sequelize.define('Tx_ValueAllocation', {
+const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
     references: {
-      model: 'Tx_Members',
+      model: 'Tx_Member',
       key: 'eth_address',
     },
   },
@@ -17,7 +17,7 @@ const TxValueAllocation = sequelize.define('Tx_ValueAllocation', {
     type: DataTypes.STRING,
     unique: 'fromEthAddressAndtoEthAddress'
     references: {
-      model: 'Tx_Members',
+      model: 'Tx_Member',
       key: 'eth_address',
     },
   epoch: {
@@ -39,8 +39,8 @@ const TxValueAllocation = sequelize.define('Tx_ValueAllocation', {
   ],
 });
 
-TxAllocationNetworkClout.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxConfigureValueAllocation.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxAllocationNetworkClout,
+  TxConfigureValueAllocation,
 };

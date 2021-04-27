@@ -3,13 +3,13 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxCloutDelegation = sequelize.define('Tx_Clout_Delegation', {
+const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
     allowNull: false,
     references: {
-      model: 'Tx_Members',
+      model: 'Tx_Member',
       key: 'eth_address',
     },
   },
@@ -19,7 +19,7 @@ const TxCloutDelegation = sequelize.define('Tx_Clout_Delegation', {
     allowNull: false,
     unique: 'fromEthAdressAndtoEthAddress', // does this work? trying to make it so you can't self delegate.
     references: {
-      model: 'Tx_Members',
+      model: 'Tx_Member',
       key: 'eth_address',
     },
   },
@@ -34,14 +34,6 @@ const TxCloutDelegation = sequelize.define('Tx_Clout_Delegation', {
     type: DataTypes.INTEGER,
     allowNull: false
   }
-  /*
-  delegations field example. eth_address_x will be a pk from the member table.
-  {
-    "eth_address_a": 1, // amount of points delegated
-    "eth_address_b": 5,
-    "eth_address_c": 3
-  }
-  */
 }, {
   indexes: [
     { fields: ['from_eth_address'] },
@@ -50,8 +42,8 @@ const TxCloutDelegation = sequelize.define('Tx_Clout_Delegation', {
   ],
 });
 
-TxDelegationNetworkValue.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxConfigureCloutDelegation.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxDelegationNetworkValue,
+  TxConfigureCloutDelegation,
 };
