@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const authentication = require('./main/auth');
-const profile = require('./main/profile');
+const member = require('./main/member');
 const allocation = require('./main/contracts/ctAllocation');
 const network = require('./main/contracts/ctNetwork');
 const pools = require('./main/contracts/ctPools');
@@ -18,7 +18,7 @@ app.options('*', cors());
 app.use(bodyParser.json());
 
 app.use(authentication);
-app.use(profile);
+app.use(member);
 app.use(allocation);
 app.use(network);
 app.use(pools);

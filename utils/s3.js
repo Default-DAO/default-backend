@@ -27,7 +27,7 @@ async function uploadToS3(data) {
         return new Promise((resolve, reject) => {
             s3.upload(params, (err, data) => {
                 if (err) return reject(err)
-                return resolve(data)
+                return resolve(data.Location)
             })
         })
     } catch (err) {

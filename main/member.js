@@ -4,10 +4,10 @@ const {
 } = require('../config/keys');
 
 const { ApiMember } = require('../models/api/apiMember');
-
+const { uploadToS3 } = require('../utils/s3')
 const { authMiddleware } = require('../utils/auth');
 
-router.get('/api/profile', async (req, res) => {
+router.get('/api/member', async (req, res) => {
   try {
     const member = await ApiMember.findOne({
       where: { ethAddress: req.query.ethAddress },
@@ -51,7 +51,7 @@ router.get('/api/profile', async (req, res) => {
   }
 });
 
-router.post('/api/profile/claim', authMiddleware, async (req, res) => {
+router.post('/api/member/claim', authMiddleware, async (req, res) => {
   try {
     const { ethAddress } = req.body;
     const member = await ApiMember.findOne({
@@ -130,17 +130,41 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
 
 router.put('/api/member/image', async (req, res) => {
   try {
+    const { image } = req.body
+    let url = await uploadToS3(image)
 
+    res.send({
+      result: {
+        url,
+        error: false, // TODO use wrapper to return every response so we can standardize
+      },
+    });
   } catch (err) {
-    res.status(400).send(err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCodde: BAD_REQUEST,
+      },
+    });
   }
 });
 
 router.put('/api/member/alias', async (req, res) => {
   try {
+    const { alias, ethAddress } = req.body
 
+    await ApiMember.update({ alias }, {
+      where: { ethAddress }
+    });
+
+    res.send({ result: { success: true, error: false } });
   } catch (err) {
-    res.status(400).send(err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCodde: BAD_REQUEST,
+      },
+    });
   }
 });
 

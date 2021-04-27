@@ -2,6 +2,11 @@ const router = require('express').Router();
 
 router.post('/api/ctPools/addLiquidity', async (req, res) => {
   try {
+    const {
+      ethAddress,
+      amountUsdc
+    } = req.body
+
     
 
     /*  @dev

@@ -58,7 +58,7 @@ const authMiddleware = async (req, res, next) => {
     });
 
     if (member && isValidSignature(ethAddress, member.nonce, chainId, signature)) {
-      ApiMember.update({ nonce: uuid.v4() }, {
+      await ApiMember.update({ nonce: uuid.v4() }, {
         where: { id: member.id },
       }); // TODO do we need await here??
 
