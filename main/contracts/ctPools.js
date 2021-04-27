@@ -36,7 +36,7 @@ router.post('/api/ctPools/addLiquidity', async (req, res) => {
       txPoolUsdc.add({
         ethAddress: req.ethAddress,
         createdEpoch: currentEpoch,
-        transactionType: "PROVIDE_USDC_LIQUIDITY,
+        transactionType: "PROVIDE_USDC_LIQUIDITY",
         amountUsdc: req.amountUsdc
       })
     }

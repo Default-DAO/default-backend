@@ -89,51 +89,52 @@ router.post('/api/ctNetwork/incrementEpoch', async (req, res) => {
             // ...
         })
 
-        return { "success", newNetworkState },
+        return { "success": newNetworkState }
     //
 
   } catch (err) {
     res.status(400).send(err);
   }
+})
 
-  /* @todo
-   * move Member logic out of ctNetwork and into new file called ctMember.js 
-   */
+/* @todo
+  * move Member logic out of ctNetwork and into new file called ctMember.js 
+  */
 
-  router.get('/api/ctNetwork/getMemberSet', async (req, res) => {
-    try {
-    /*  @dev
-    *  request: no auth required
-    *  response: returns a list of all members by address & alias
-    *  
-    *  response object: 
-    * 
-    *    return [     => a list of all the members in the network
-    *        { 
-    *          ethAddress: String,
-    *          alias: String,
-    *          type: 'PERSONAL' or 'ENTITY,
-    *          createdEpoch: Integer
-    *        },
-    *        { 
-    *          ethAddress: String,
-    *          alias: String,
-    *          type: 'PERSONAL' or 'ENTITY,
-    *          createdEpoch: Integer
-    *        }
-    *    ]
-    */
+router.get('/api/ctNetwork/getMemberSet', async (req, res) => {
+  try {
+  /*  @dev
+  *  request: no auth required
+  *  response: returns a list of all members by address & alias
+  *  
+  *  response object: 
+  * 
+  *    return [     => a list of all the members in the network
+  *        { 
+  *          ethAddress: String,
+  *          alias: String,
+  *          type: 'PERSONAL' or 'ENTITY,
+  *          createdEpoch: Integer
+  *        },
+  *        { 
+  *          ethAddress: String,
+  *          alias: String,
+  *          type: 'PERSONAL' or 'ENTITY,
+  *          createdEpoch: Integer
+  *        }
+  *    ]
+  */
 
-      // pseudocode
-      return TxMember.getAll();
-  
-    } catch (err) {
-      res.status(400).send(err);
-    }
-  },
+    // pseudocode
+    return TxMember.getAll();
 
-  router.post('/api/ctNetwork/registerNewMember', async (req, res) => {
-    try {
+  } catch (err) {
+    res.status(400).send(err);
+  }
+}),
+
+router.post('/api/ctNetwork/registerNewMember', async (req, res) => {
+  try {
     /*  @dev
     *  request: requires metamask signature, takes params
     *
@@ -169,12 +170,13 @@ router.post('/api/ctNetwork/incrementEpoch', async (req, res) => {
         availableLiquidityUsdc: 100000
     })
 
-    return { "success", newMember }
-  
-    } catch (err) {
-      res.status(400).send(err);
-    }
-  });
+  return { "success": newMember }
+
+  } catch (err) {
+    res.status(400).send(err);
+  }  
 });
+
+
 
 module.exports = router;

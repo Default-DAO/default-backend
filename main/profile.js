@@ -1,11 +1,11 @@
 const router = require('express').Router();
 const {
   NOT_WHITELISTED, ALREADY_CLAIMED, INTERNAL_ERROR, BAD_REQUEST,
-} = require('../../config/keys');
+} = require('../config/keys');
 
-const { ApiMember } = require('../../models/api/apiMember');
+const { ApiMember } = require('../models/api/apiMember');
 
-const { authMiddleware } = require('../../utils/auth');
+const { authMiddleware } = require('../utils/auth');
 
 router.get('/api/profile', async (req, res) => {
   try {
