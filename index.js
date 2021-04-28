@@ -5,9 +5,15 @@ const cors = require('cors');
 
 const authentication = require('./main/auth');
 const profile = require('./main/profile');
-const liquidity = require('./main/liquidity');
-const clout = require('./main/clout');
-const value = require('./main/value');
+const allocation = require('./main/contracts/ctAllocation');
+const network = require('./main/contracts/ctNetwork');
+const pools = require('./main/contracts/ctPools');
+const staking = require('./main/contracts/ctDelegation');
+
+const { sendWrapped, wrappedError } = require('./utils/wrappedResponse');
+
+express.response.sendWrapped = sendWrapped;
+express.response.sendError = wrappedError;
 
 const port = process.env.PORT;
 const app = express();
@@ -18,9 +24,10 @@ app.use(bodyParser.json());
 
 app.use(authentication);
 app.use(profile);
-app.use(liquidity);
-app.use(value);
-app.use(clout);
+app.use(allocation);
+app.use(network);
+app.use(pools);
+app.use(staking);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console

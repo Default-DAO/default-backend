@@ -58,18 +58,13 @@ const authMiddleware = async (req, res, next) => {
     });
 
     if (member && isValidSignature(ethAddress, member.nonce, chainId, signature)) {
-      ApiMember.update({ nonce: uuid.v4() }, {
+      await ApiMember.update({ nonce: uuid.v4() }, {
         where: { id: member.id },
-      }); // TODO do we need await here??
+      });
 
       next();
     } else {
-      res.send({
-        result: {
-          error: true,
-          errorCode: INVALID_SIGNATURE,
-        },
-      });
+      res.sendError(INVALID_SIGNATURE);
       return;
     }
   } catch (err) {
