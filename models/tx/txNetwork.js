@@ -6,51 +6,52 @@ const TxNetwork = sequelize.define('Tx_Network', {
     field: 'epoch_number',
     type: DataTypes.INTEGER,
     allowNull: false,
-    primaryKey: true // increment the primaryKey by 1 each time
+    primaryKey: true, // increment the primaryKey by 1 each time
   },
-  withdrawFeeDnt: { // fee applied to all DNT Liquidity withdrawls this epoch 
-    field: 'DNT_liquidity_withdraw_fee',
+  withdrawFeeDnt: { // fee applied to all DNT Liquidity withdrawls this epoch
+    field: 'withdraw_fee_fnt',
     type: DataTypes.FLOAT,
     allowNull: false,
-    validates: { // is a valid percentage, starts at 1
+    validate: { // is a valid percentage, starts at 1
       min: 0,
-      max: 1
-    }
+      max: 1,
+    },
   },
-  withdrawFeeUSDC: { // fee applied to all USDC Liquidity withdrawls this epoch 
-    field: 'USDC_liquidity_withdraw_fee',
+  withdrawFeeUSDC: { // fee applied to all USDC Liquidity withdrawls this epoch
+    field: 'withdraw_fee_usdc',
     type: DataTypes.FLOAT,
     allowNull: false,
-    validates: { // starts at 1, changes to .1 when we go on chain
+    validate: { // starts at 1, changes to .1 when we go on chain
       min: 0,
-      max: 1
-    }
+      max: 1,
+    },
   },
   dntEpochRewardIssuance: {
-    field: 'DNT_reward_epoch_issuance',
+    field: 'dnt_epoch_reward_issuance',
     type: DataTypes.INTEGER,
     allowNull: false,
-    validates: {
-      equals: 1000000 // 1M DNT tokens issued per epoch 
-    }
+    validate: {
+      equals: 1000000, // 1M DNT tokens issued per epoch
+    },
   },
   dntRewardDistributions: {
-    field: 'DNT_reward_distributions',
+    field: 'dnt_reward_distributions',
     type: DataTypes.JSON,
-    allowNull: false
-  }
+    allowNull: false,
+  },
   /* @dev
    * denotes how the 1M tokens are distributed
    * JSON object looks like this:
-   * 
-   * var dntRewardDistributions = { 
+   *
+   * var dntRewardDistributions = {
    *  contributorDntRewards: .5,
    *  liquidityDntRewards: .5
    * }
-   * 
-   * and eventually can change based on our network protocol, we may one day have something like this:
-   * 
-   * var dntRewardDistributions = { 
+   *
+   * and eventually can change based on our network protocol,
+   * we may one day have something like this:
+   *
+   * var dntRewardDistributions = {
    *  contributorRewards: .35,
    *  liquidityRewards: .35,
    *  influencerRewards: .1,       // Small dnt bonus for highest $CLOUT members

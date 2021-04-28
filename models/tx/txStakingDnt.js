@@ -8,7 +8,7 @@ const TxStakingDnt = sequelize.define('Tx_StakingDNT', {
     field: 'eth_address',
     type: DataTypes.STRING,
     references: {
-      model: 'Tx_Member',
+      model: 'Tx_Members',
       key: 'eth_address',
     },
   },

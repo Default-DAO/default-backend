@@ -20,16 +20,16 @@ const TxPooUsdc = sequelize.define('Tx_PoolUSDC', {
   transactionType: {
     field: 'transaction_type',
     type: DataTypes.STRING,
-    values: ['PROVIDE_USDC_LIQUIDITY', 
-             'WITHDRAW_USDC_LIQUIDITY', 
-             'DNT_SWAP'],
+    values: ['PROVIDE_USDC_LIQUIDITY',
+      'WITHDRAW_USDC_LIQUIDITY',
+      'DNT_SWAP'],
     allowNull: false,
   },
   amountUsdc: {
-    field: 'amount_USDC', // can be positive/negative for DNT_SWAP depending on the direction
+    field: 'amount_usdc', // can be positive/negative for DNT_SWAP depending on the direction
     type: DataTypes.INTEGER,
     allowNull: false,
-  }
+  },
 }, {
   indexes: [
     { fields: ['eth_address'] },
@@ -37,7 +37,8 @@ const TxPooUsdc = sequelize.define('Tx_PoolUSDC', {
   ],
 });
 
-TxLiquidityUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxPooUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
+// TxLiquidityUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
 /* @todo
  * In the future add the swap tx if it's a DNT swap e.g.
  * TxLiquidityUsdc.belongsTo(TxPoolSwap, {foreignKey: 'swap_tx'});

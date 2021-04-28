@@ -5,16 +5,16 @@ router.get('/api/ctNetwork/getNetworkState', async (req, res) => {
     /*  @dev
      *  request: no auth required
      *  response: returns the network state for most recent epoch
-     *  
-     *  response object: 
-     * 
+     *
+     *  response object:
+     *
      *    return {
      *      network: {
      *        currentEpoch: Integer;     => highest epoch number in Tx_Network table
      *        USDCwithdrawFee: Float;    => withdraw fee % for USDC from pool, stays at 100% until on-chain
      *        DNTwithdrawFee: Float;     => withdraw fee % for DNT from pool, stays at 100% until on-chain
      *        epochIssuance: 1000000;    => tokens issued for the epoch
-     *        rewardsDistribution: {   
+     *        rewardsDistribution: {
      *          contributorRewards: .5,  => multiplier for tokens going to contributors
      *          liquidityRewards: .5     => multiplier for tokens going to liquidity providers (USDC)
      *        },
@@ -27,19 +27,18 @@ router.get('/api/ctNetwork/getNetworkState', async (req, res) => {
      */
 
     // pseudocode
-        var networkState = TxNetwork.getLatest();
-        var poolUsdc = TxPoolUsdc.all.sum();
-        var poolDnt = TxPoolDnt.all.sum();
+    const networkState = TxNetwork.getLatest();
+    const poolUsdc = TxPoolUsdc.all.sum();
+    const poolDnt = TxPoolDnt.all.sum();
 
-        return {
-            network: networkState,
-            pools: {
-                USDCPool: poolUsdc,
-                DNTPool: poolDnt
-            }
-        }
+    return {
+      network: networkState,
+      pools: {
+        USDCPool: poolUsdc,
+        DNTPool: poolDnt,
+      },
+    };
     //
-
   } catch (err) {
     res.status(400).send(err);
   }
@@ -48,17 +47,17 @@ router.get('/api/ctNetwork/getNetworkState', async (req, res) => {
 router.post('/api/ctNetwork/incrementEpoch', async (req, res) => {
   try {
     /*  @dev
-     *  request: require admin auth,  
+     *  request: require admin auth,
      *  response: upon successful distribution, return the network state for new epoch
-     * 
+     *
      *  response object: should look similar to above
-     * 
+     *
      *    return {
      *      currentEpoch: Integer,     => highest epoch number in Tx_Network table
      *      USDCwithdrawFee: Float,    => withdraw fee % for USDC from pool, stays at 100% until on-chain
      *      DNTwithdrawFee: Float,     => withdraw fee % for DNT from pool, stays at 100% until on-chain
      *      epochIssuance: 1000000,    => tokens issued for the epoch
-     *      rewardsDistribution: {   
+     *      rewardsDistribution: {
      *        contributorRewards: .5,  => multiplier for tokens going to contributors
      *        liquidityRewards: .5     => multiplier for tokens going to liquidity providers (USDC)
      *      }
@@ -66,117 +65,112 @@ router.post('/api/ctNetwork/incrementEpoch', async (req, res) => {
      */
 
     // pseudocode
-        var newNetworkState = TxNetwork.createNew({
-            "epochNumber": currentEpoch + 1, 
-            "USDCwithdrawFee": 1.0,
-            "DNTwithdrawFee": 1.0,
-            "epochIssuance": 1000000,
-            "rewardsDistribution": {
-                "contributorRewards": .5,
-                "liquidityRewards": .5,
-            }
-        })
+    const newNetworkState = TxNetwork.createNew({
+      epochNumber: currentEpoch + 1,
+      USDCwithdrawFee: 1.0,
+      DNTwithdrawFee: 1.0,
+      epochIssuance: 1000000,
+      rewardsDistribution: {
+        contributorRewards: 0.5,
+        liquidityRewards: 0.5,
+      },
+    });
 
-        // distribute tokens to contributors here
-        TxLiquidityPoolSharesDnt.createnew({
-            transactionType: 'CONTRIBUTOR_DNT_REWARD'
-            // ...
-        })
+    // distribute tokens to contributors here
+    TxLiquidityPoolSharesDnt.createnew({
+      transactionType: 'CONTRIBUTOR_DNT_REWARD',
+      // ...
+    });
 
-        // distribute tokens to LPs here
-        TxLiquidityPoolSharesDnt.createnew({
-            transactionType: 'USDC_LIQUIDITY_DNT_REWARD'
-            // ...
-        })
+    // distribute tokens to LPs here
+    TxLiquidityPoolSharesDnt.createnew({
+      transactionType: 'USDC_LIQUIDITY_DNT_REWARD',
+      // ...
+    });
 
-        return { "success": newNetworkState }
+    return { success: newNetworkState };
     //
-
   } catch (err) {
     res.status(400).send(err);
   }
-})
+});
 
 /* @todo
-  * move Member logic out of ctNetwork and into new file called ctMember.js 
+  * move Member logic out of ctNetwork and into new file called ctMember.js
   */
 
 router.get('/api/ctNetwork/getMemberSet', async (req, res) => {
   try {
-  /*  @dev
-  *  request: no auth required
-  *  response: returns a list of all members by address & alias
-  *  
-  *  response object: 
-  * 
-  *    return [     => a list of all the members in the network
-  *        { 
-  *          ethAddress: String,
-  *          alias: String,
-  *          type: 'PERSONAL' or 'ENTITY,
-  *          createdEpoch: Integer
-  *        },
-  *        { 
-  *          ethAddress: String,
-  *          alias: String,
-  *          type: 'PERSONAL' or 'ENTITY,
-  *          createdEpoch: Integer
-  *        }
-  *    ]
-  */
+    /*  @dev
+    *  request: no auth required
+    *  response: returns a list of all members by address & alias
+    *
+    *  response object:
+    *
+    *    return [     => a list of all the members in the network
+    *        {
+    *          ethAddress: String,
+    *          alias: String,
+    *          type: 'PERSONAL' or 'ENTITY,
+    *          createdEpoch: Integer
+    *        },
+    *        {
+    *          ethAddress: String,
+    *          alias: String,
+    *          type: 'PERSONAL' or 'ENTITY,
+    *          createdEpoch: Integer
+    *        }
+    *    ]
+    */
 
     // pseudocode
     return TxMember.getAll();
-
   } catch (err) {
     res.status(400).send(err);
   }
 }),
 
-router.post('/api/ctNetwork/registerNewMember', async (req, res) => {
-  try {
-    /*  @dev
-    *  request: requires metamask signature, takes params
-    *
-    *  request payload:
-    * 
-    *    req = {
-    *      ethAddress: String,
-    *      alias: String,
-    *      type: String,
-    *    }   
-    *
-    *  response: returns a new member object
-    *  
-    *  response object: 
-    * 
-    *    return {
-    *      newMember: { 
-    *        ethAddress: String,
-    *        alias: String,
-    *        type: 'PERSONAL' or 'ENTITY,
-    *        createdEpoch: Integer,
-    *        availableLiquidityUsdc: 100000 
-    *      }
-    *    }
-    */
-  
-    // pseudocode
-    var newMember = TxMember.createNew({
+  router.post('/api/ctNetwork/registerNewMember', async (req, res) => {
+    try {
+      /*  @dev
+        *  request: requires metamask signature, takes params
+        *
+        *  request payload:
+        *
+        *    req = {
+        *      ethAddress: String,
+        *      alias: String,
+        *      type: String,
+        *    }
+        *
+        *  response: returns a new member object
+        *
+        *  response object:
+        *
+        *    return {
+        *      newMember: {
+        *        ethAddress: String,
+        *        alias: String,
+        *        type: 'PERSONAL' or 'ENTITY,
+        *        createdEpoch: Integer,
+        *        availableLiquidityUsdc: 100000
+        *      }
+        *    }
+        */
+
+      // pseudocode
+      const newMember = TxMember.createNew({
         ethAddress: req.ethAddress,
         alias: req.alias,
         type: req.type,
         createdEpoch: txNetwork.latestEntry.epochNumber,
-        availableLiquidityUsdc: 100000
-    })
+        availableLiquidityUsdc: 100000,
+      });
 
-  return { "success": newMember }
-
-  } catch (err) {
-    res.status(400).send(err);
-  }  
-});
-
-
+      return { success: newMember };
+    } catch (err) {
+      res.status(400).send(err);
+    }
+  });
 
 module.exports = router;

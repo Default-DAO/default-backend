@@ -1,45 +1,45 @@
-const {
-  BAD_REQUEST,
-} = require('../config/keys');
+const router = require('express').Router();
+
+const { BAD_REQUEST } = require('../../config/keys');
 const { TxMember } = require('../../models/tx/txMember');
 const { TxPoolUsdc } = require('../../models/tx/txPoolUsdc');
 const { TxLiquidityPoolSharesUsdc } = require('../../models/tx/txLiquidityPoolSharesUsdc');
 const { TxLiquidityPoolSharesDnt } = require('../../models/tx/txLiquidityPoolSharesDnt');
 
-const router = require('express').Router();
+const { getCurrentEpoch } = require('../../utils/epoch');
 
 router.post('/api/ctPools/addLiquidity', async (req, res) => {
   try {
     const {
       ethAddress,
-      amountUsdc
-    } = req.body
+      amountUsdc,
+    } = req.body;
 
     // TODO: requires metamask signature, takes params
 
     const txMember = await TxMember.findOne({
-      where: {ethAddress}
-    })
-    const remainingLiquidityAvailable = txMember.availableLiquidityUsdc - amountUsdc
-    
+      where: { ethAddress },
+    });
+    const remainingLiquidityAvailable = txMember.availableLiquidityUsdc - amountUsdc;
+
     if (remainingLiquidityAvailable >= 0) {
       await TxPoolUsdc.create({
         ethAddress,
         createdEpoch: getCurrentEpoch(),
-        transactionType: "PROVIDE_USDC_LIQUIDITY",
-        amountUsdc
-      })
+        transactionType: 'PROVIDE_USDC_LIQUIDITY',
+        amountUsdc,
+      });
     }
-    
-    remainingLiquidityAvailable <= 0 ? remainingLiquidityAvailable = 50000 : null
-    
+
+    remainingLiquidityAvailable <= 0 ? remainingLiquidityAvailable = 50000 : null;
+
     await TxMember.update({
-      availableLiquidityUsdc: remainingLiquidityAvailable // reset allocation cap if member reaches it
+      availableLiquidityUsdc: remainingLiquidityAvailable, // reset allocation cap if member reaches it
     }, {
       where: {
-        ethAddress
-      }
-    })
+        ethAddress,
+      },
+    });
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
@@ -55,11 +55,11 @@ router.post('/api/ctPools/addLiquidity', async (req, res) => {
 router.get('/api/ctPools/getPoolShares', async (req, res) => {
   /*  @dev (KEVIN'S NOTES)
   *  request: requires metamask signature
-  * 
+  *
   *  response: if successsful, returns current user's ownership of both pools
-  *  
-  *  response object: 
-  * 
+  *
+  *  response object:
+  *
   *    return {
   *      usdcLiquidityPoolShares: {
   *        ethAdress: req.ethAddress,
@@ -77,34 +77,34 @@ router.get('/api/ctPools/getPoolShares', async (req, res) => {
   */
   try {
     const {
-      ethAddress
-    } = req.body
+      ethAddress,
+    } = req.body;
 
-    //TODO: metamask signature approval
+    // TODO: metamask signature approval
 
     const usdc = await TxLiquidityPoolSharesUsdc.findAll({
       where: {
-        ethAddress
-      }
-    })
+        ethAddress,
+      },
+    });
     const dnt = await TxLiquidityPoolSharesDnt.findAll({
       where: {
-        ethAddress
-      }
-    })
+        ethAddress,
+      },
+    });
 
     const response = {
       usdcLiquidityPoolShares: usdc,
-      dntPoolShares: dnt
-    }
+      dntPoolShares: dnt,
+    };
 
-    res.send({ 
-      result: { 
+    res.send({
+      result: {
         response,
-        error: false 
-      } 
+        error: false,
+      },
     });
-  } catch(err) {
+  } catch (err) {
     res.status(400).send({
       result: {
         error: true,

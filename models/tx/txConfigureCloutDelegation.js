@@ -8,8 +8,9 @@ const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation
     field: 'from_eth_address',
     type: DataTypes.STRING,
     allowNull: false,
+    unique: 'ethAddressesAndEpoch',
     references: {
-      model: 'Tx_Member',
+      model: 'Tx_Members',
       key: 'eth_address',
     },
   },
@@ -17,9 +18,9 @@ const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation
     field: 'to_eth_address',
     type: DataTypes.STRING,
     allowNull: false,
-    unique: 'fromEthAdressAndtoEthAddress', // does this work? trying to make it so you can't self delegate.
+    unique: 'ethAddressesAndEpoch',
     references: {
-      model: 'Tx_Member',
+      model: 'Tx_Members',
       key: 'eth_address',
     },
   },
@@ -27,19 +28,26 @@ const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation
     field: 'epoch',
     type: DataTypes.INTEGER,
     allowNull: false,
-    unique: 'ethAdressAndEpoch',
+    unique: 'ethAddressesAndEpoch',
   },
   weight: {
     field: 'weight',
     type: DataTypes.INTEGER,
-    allowNull: false
-  }
+    allowNull: false,
+  },
 }, {
   indexes: [
     { fields: ['from_eth_address'] },
-    { fields: ['to_eth_address']},
+    { fields: ['to_eth_address'] },
     { fields: ['epoch'] },
   ],
+  validate: {
+    cannotSelfDelegate() {
+      if (this.fromEthAddress === this.toEthAddress) {
+        throw new Error('Cannot self delegate');
+      }
+    },
+  },
 });
 
 TxConfigureCloutDelegation.belongsTo(TxMember, { foreignKey: 'eth_address' });
