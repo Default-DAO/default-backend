@@ -2,8 +2,9 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
+const { TxPoolUsdc } = require('./txPoolUsdc');
 
-const TxLiquidityUsdc = sequelize.define('Tx_LiquidityUSDC', {
+const TxLiquidityPoolSharesUsdc = sequelize.define('Tx_LiquidityPoolSharesUSDC', {
   ethAddress: {
     field: 'eth_address',
     type: DataTypes.STRING,
@@ -20,11 +21,12 @@ const TxLiquidityUsdc = sequelize.define('Tx_LiquidityUSDC', {
   transactionType: {
     field: 'transaction_type',
     type: DataTypes.STRING,
-    values: ['ADD', 'REMOVE'],
+    values: ['USDC_LIQUIDITY_PROVIDER_DEPOSIT', // TODO make these constants
+      'USDC_LIQUIDITY_PROVIDER_WITHDRAW'], // withdraw usdc liquidity set to 100% fee at start (disable)
     allowNull: false,
   },
-  amount: {
-    field: 'amount',
+  usdcPoolSharesTransacted: {
+    field: 'usdc_pool_shares_transacted', // positive for deposit, negative for withdraw
     type: DataTypes.INTEGER,
     allowNull: false,
   },
@@ -35,8 +37,9 @@ const TxLiquidityUsdc = sequelize.define('Tx_LiquidityUSDC', {
   ],
 });
 
-TxLiquidityUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxLiquidityPoolSharesUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
+// TxLiquidityPoolSharesUsdc.belongsTo(TxPoolUsdc);
 
 module.exports = {
-  TxLiquidityUsdc,
+  TxLiquidityPoolSharesUsdc,
 };

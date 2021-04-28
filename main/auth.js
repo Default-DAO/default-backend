@@ -1,9 +1,9 @@
 const router = require('express').Router();
 
-const { NOT_WHITELISTED, BAD_REQUEST } = require('../../config/keys');
-const { authMsg, authMiddleware } = require('../../utils/auth');
-const { rateLimiter } = require('../../utils/rateLimiter');
-const { ApiMember } = require('../../models/api/apiMember');
+const { NOT_WHITELISTED, BAD_REQUEST } = require('../config/keys');
+const { authMsg, authMiddleware } = require('../utils/auth');
+const { rateLimiter } = require('../utils/rateLimiter');
+const { ApiMember } = require('../models/api/apiMember');
 
 // limit repeated failed requests to login endpoint
 router.use('/api/auth', rateLimiter);
