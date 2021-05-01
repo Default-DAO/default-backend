@@ -1,9 +1,9 @@
 const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { TxConfigureValueAllocation } = require('../../models/tx/txConfigureValueAllocation');
+const { TxValueConfiguration } = require('../../models/tx/txValueConfiguration');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-router.post('/api/txConfigureValueAllocation/send', async (req, res) => {
+router.post('/api/txValueAllocation/send', async (req, res) => {
   try {
     const {
       fromEthAddress,
@@ -11,7 +11,7 @@ router.post('/api/txConfigureValueAllocation/send', async (req, res) => {
       weight,
     } = req.body;
 
-    await TxConfigureValueAllocation.create({
+    await TxValueConfiguration.create({
       fromEthAddress,
       toEthAddress,
       weight,
@@ -29,7 +29,7 @@ router.post('/api/txConfigureValueAllocation/send', async (req, res) => {
   }
 });
 
-router.get('/api/txConfigureValueAllocation', async (req, res) => {
+router.get('/api/txValueConfiguration', async (req, res) => {
   try {
     const {
       fromEthAddress,
@@ -42,7 +42,7 @@ router.get('/api/txConfigureValueAllocation', async (req, res) => {
     fromEthAddress ? queryObject.fromEthAddress = fromEthAddress : null;
     toEthAddress ? queryObject.toEthAddress = toEthAddress : null;
 
-    const valueAllocations = await TxConfigureValueAllocation.findAll({
+    const valueAllocations = await TxValueConfiguration.findAll({
       where: {
         ...queryObject,
         epoch,

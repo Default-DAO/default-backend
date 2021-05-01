@@ -3,7 +3,7 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation', {
+const TxValueConfiguration = sequelize.define('Tx_ValueConfiguration', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
@@ -48,8 +48,8 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation
   },
 });
 
-TxConfigureValueAllocation.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxValueConfiguration.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxConfigureValueAllocation,
+  TxValueConfiguration,
 };

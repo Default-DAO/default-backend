@@ -24,16 +24,21 @@ const TxMember = sequelize.define('Tx_Member', {
     allowNull: false,
   },
   /* @dev
-   * available_liquidity_USDC keeps track of the amount of liquidity
+   * provideLiquidityCapUsdc keeps track of the amount of liquidity
    * the member is allowed to provide next epoch (effective cap).
    * This starts at 100,000 for each new member. Each LP transaction
    * reduces this number by the total amount, and resets to 50,000 when
    * it hits 0 (we can adjust this number in the future).
    */
-  availableLiquidityUsdc: {
-    field: 'available_liquidity_usdc',
+  liquidityCapUsdc: {
+    field: 'liquidity_cap_usdc',
     type: DataTypes.INTEGER,
     allowNull: false,
+  },
+  // Tracks the last time user provided liquidity
+  liquidityCapEpoch: {
+    field: 'liquidity_cap_epoch',
+    type: DataTypes.INTEGER,
   },
 }, {
   indexes: [

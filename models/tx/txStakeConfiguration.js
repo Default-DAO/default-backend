@@ -3,7 +3,7 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation', {
+const TxStakeConfiguration = sequelize.define('Tx_StakeConfiguration', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
@@ -50,8 +50,8 @@ const TxConfigureCloutDelegation = sequelize.define('Tx_ConfigureCloutDelegation
   },
 });
 
-TxConfigureCloutDelegation.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxStakeConfiguration.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxConfigureCloutDelegation,
+  TxStakeConfiguration,
 };

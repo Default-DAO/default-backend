@@ -27,14 +27,14 @@ router.get('/api/ctNetwork/getNetworkState', async (req, res) => {
      */
 
     // pseudocode
-    const networkState = TxNetwork.getLatest();
-    const poolUsdc = TxPoolUsdc.all.sum();
-    const poolDnt = TxPoolDnt.all.sum();
+    const networkState = TxProtocol.getLatest();
+    const txUsdcTokens = TxUsdcTokens.all.sum();
+    const poolDnt = TxDntTokens.all.sum();
 
     return {
       network: networkState,
       pools: {
-        USDCPool: poolUsdc,
+        USDCPool: txUsdcTokens,
         DNTPool: poolDnt,
       },
     };
@@ -65,7 +65,7 @@ router.post('/api/ctNetwork/incrementEpoch', async (req, res) => {
      */
 
     // pseudocode
-    const newNetworkState = TxNetwork.createNew({
+    const newNetworkState = TxProtocol.createNew({
       epochNumber: currentEpoch + 1,
       USDCwithdrawFee: 1.0,
       DNTwithdrawFee: 1.0,
@@ -77,13 +77,13 @@ router.post('/api/ctNetwork/incrementEpoch', async (req, res) => {
     });
 
     // distribute tokens to contributors here
-    TxLiquidityPoolSharesDnt.createnew({
+    TxLiquidityPoolSharesDnt.createnew({ // this table was deleted FYI
       transactionType: 'CONTRIBUTOR_DNT_REWARD',
       // ...
     });
 
     // distribute tokens to LPs here
-    TxLiquidityPoolSharesDnt.createnew({
+    TxLiquidityPoolSharesDnt.createnew({ // this table was deleted FYI
       transactionType: 'USDC_LIQUIDITY_DNT_REWARD',
       // ...
     });
@@ -133,37 +133,37 @@ router.get('/api/ctNetwork/getMemberSet', async (req, res) => {
   router.post('/api/ctNetwork/registerNewMember', async (req, res) => {
     try {
       /*  @dev
-        *  request: requires metamask signature, takes params
-        *
-        *  request payload:
-        *
-        *    req = {
-        *      ethAddress: String,
-        *      alias: String,
-        *      type: String,
-        *    }
-        *
-        *  response: returns a new member object
-        *
-        *  response object:
-        *
-        *    return {
-        *      newMember: {
-        *        ethAddress: String,
-        *        alias: String,
-        *        type: 'PERSONAL' or 'ENTITY,
-        *        createdEpoch: Integer,
-        *        availableLiquidityUsdc: 100000
-        *      }
-        *    }
-        */
+              *  request: requires metamask signature, takes params
+              *
+              *  request payload:
+              *
+              *    req = {
+              *      ethAddress: String,
+              *      alias: String,
+              *      type: String,
+              *    }
+              *
+              *  response: returns a new member object
+              *
+              *  response object:
+              *
+              *    return {
+              *      newMember: {
+              *        ethAddress: String,
+              *        alias: String,
+              *        type: 'PERSONAL' or 'ENTITY,
+              *        createdEpoch: Integer,
+              *        availableLiquidityUsdc: 100000
+              *      }
+              *    }
+              */
 
       // pseudocode
       const newMember = TxMember.createNew({
         ethAddress: req.ethAddress,
         alias: req.alias,
         type: req.type,
-        createdEpoch: txNetwork.latestEntry.epochNumber,
+        createdEpoch: TxProtocol.latestEntry.epochNumber,
         availableLiquidityUsdc: 100000,
       });
 

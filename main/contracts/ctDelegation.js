@@ -1,9 +1,9 @@
 const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { TxConfigureCloutDelegation } = require('../../models/tx/txConfigureCloutDelegation');
+const { txStakeConfiguration } = require('../../models/tx/txStakeConfiguration');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-router.post('/api/txConfigureCloutDelegation/send', async (req, res) => {
+router.post('/api/txStakeConfiguration/send', async (req, res) => {
   try {
     const {
       fromEthAddress,
@@ -11,7 +11,7 @@ router.post('/api/txConfigureCloutDelegation/send', async (req, res) => {
       weight,
     } = req.body;
 
-    await TxConfigureCloutDelegation.create({
+    await txStakeConfiguration.create({
       fromEthAddress,
       toEthAddress,
       weight,
@@ -29,7 +29,7 @@ router.post('/api/txConfigureCloutDelegation/send', async (req, res) => {
   }
 });
 
-router.get('/api/txConfigureCloutDelegation', async (req, res) => {
+router.get('/api/txStakeConfiguration', async (req, res) => {
   try {
     const {
       fromEthAddress,
@@ -42,7 +42,7 @@ router.get('/api/txConfigureCloutDelegation', async (req, res) => {
     fromEthAddress ? queryObject.fromEthAddress = fromEthAddress : null;
     toEthAddress ? queryObject.toEthAddress = toEthAddress : null;
 
-    const valueAllocations = await TxConfigureCloutDelegation.findAll({
+    const valueAllocations = await txStakeConfiguration.findAll({
       where: {
         ...queryObject,
         epoch,
