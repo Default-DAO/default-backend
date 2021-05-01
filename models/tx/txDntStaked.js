@@ -8,7 +8,7 @@ const TxDntStaked = sequelize.define('Tx_DntStaked', {
     field: 'eth_address',
     type: DataTypes.STRING,
     references: {
-      model: 'Tx_Member',
+      model: 'Tx_Members',
       key: 'eth_address',
     },
   },
@@ -24,7 +24,7 @@ const TxDntStaked = sequelize.define('Tx_DntStaked', {
     /* make sure amount_staked is not greater than the amount of ÐNT
       rewards in the treasury pool
     */
-  }
+  },
 }, {
   indexes: [
     { fields: ['eth_address'] },
@@ -32,8 +32,8 @@ const TxDntStaked = sequelize.define('Tx_DntStaked', {
   ],
 });
 
-TxStakingDnt.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxDntStaked.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxStakingDnt,
+  TxDntStaked,
 };

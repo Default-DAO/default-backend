@@ -1,11 +1,7 @@
 const router = require('express').Router();
-const { BAD_REQUEST } = require('../../config/keys')
-const { TxConfigureCloutDelegation } = require('../../models/tx/txStakeConfiguration');
-const { TxStakingDnt } = require('../../models/tx/txDntStaked');
-const { TxPoolDnt } = require('../../models/tx/txDntTokens');
-const { txLiquidityPoolSharesDnt } = require('../../models/tx/txDntTokens');
+const { BAD_REQUEST } = require('../../config/keys');
 
-//HELP
+// HELP
 router.post('/api/ctStake/configure', async (req, res) => {
   try {
     // configurations: [{
@@ -17,21 +13,21 @@ router.post('/api/ctStake/configure', async (req, res) => {
     const {
       configurations,
       stakeAmount,
-      ethAddress
-    } = req.body
+      ethAddress,
+    } = req.body;
 
-    //QUESTIONS:
-    //How much can you stake? Is there a limit to how much you can stake based on how much you have in the pool?
+    // QUESTIONS:
+    // How much can you stake? Is there a limit to how much you can stake based on how much you have in the pool?
 
-    //STEP0: VALIDATE Metamask signature
+    // STEP0: VALIDATE Metamask signature
 
-    //STEP1. SUBTRACT stakeAmount FROM txDntTokens
+    // STEP1. SUBTRACT stakeAmount FROM txDntTokens
 
-    //STEP2. CHECK AMOUNT AVAILABLE IF TRANSACTION CAN GO THROUGH
+    // STEP2. CHECK AMOUNT AVAILABLE IF TRANSACTION CAN GO THROUGH
 
-    //STEP3. ADD stakeAmount TO tx txDntStaked
+    // STEP3. ADD stakeAmount TO tx txDntStaked
 
-    //STEP4. INSERT configurations TO txStakeConfiguration
+    // STEP4. INSERT configurations TO txStakeConfiguration
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
@@ -47,16 +43,16 @@ router.post('/api/ctStake/configure', async (req, res) => {
 router.get('/api/ctStake', async (req, res) => {
   try {
     const {
-      ethAddress
-    } = req.query
+      ethAddress,
+    } = req.query;
 
-    //STEP0: VALIDATE METAMASK SIGNATURE
+    // STEP0: VALIDATE METAMASK SIGNATURE
 
-    //STEP1. GET all txStakeConfigurations
+    // STEP1. GET all txStakeConfigurations
 
-    //STEP2. AGGREGATE all txStakeConfigurations and make stakeAmount
+    // STEP2. AGGREGATE all txStakeConfigurations and make stakeAmount
 
-    //STEP3. SEND {
+    // STEP3. SEND {
     //   amount,
     //   configurations
     // }

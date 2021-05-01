@@ -3,13 +3,14 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const txStakeConfiguration = sequelize.define('Tx_StakeConfiguration', {
+const TxStakeConfiguration = sequelize.define('Tx_StakeConfiguration', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
     allowNull: false,
+    unique: 'ethAddressesAndEpoch',
     references: {
-      model: 'Tx_Member',
+      model: 'Tx_Members',
       key: 'eth_address',
     },
   },
@@ -17,9 +18,9 @@ const txStakeConfiguration = sequelize.define('Tx_StakeConfiguration', {
     field: 'to_eth_address',
     type: DataTypes.STRING,
     allowNull: false,
-    unique: 'fromEthAdressAndtoEthAddress', // does this work? trying to make it so you can't self delegate.
+    unique: 'ethAddressesAndEpoch',
     references: {
-      model: 'Tx_Member',
+      model: 'Tx_Members',
       key: 'eth_address',
     },
   },
@@ -27,23 +28,30 @@ const txStakeConfiguration = sequelize.define('Tx_StakeConfiguration', {
     field: 'epoch',
     type: DataTypes.INTEGER,
     allowNull: false,
-    unique: 'ethAdressAndEpoch',
+    unique: 'ethAddressesAndEpoch',
   },
   weight: {
     field: 'weight',
     type: DataTypes.INTEGER,
-    allowNull: false
-  }
+    allowNull: false,
+  },
 }, {
   indexes: [
     { fields: ['from_eth_address'] },
-    { fields: ['to_eth_address']},
+    { fields: ['to_eth_address'] },
     { fields: ['epoch'] },
   ],
+  validate: {
+    cannotSelfDelegate() {
+      if (this.fromEthAddress === this.toEthAddress) {
+        throw new Error('Cannot self delegate');
+      }
+    },
+  },
 });
 
-txStakeConfiguration.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxStakeConfiguration.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  txStakeConfiguration,
+  TxStakeConfiguration,
 };

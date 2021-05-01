@@ -3,10 +3,11 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxConfigureValueAllocation = sequelize.define('Tx_ValueConfiguration', {
+const TxValueConfiguration = sequelize.define('Tx_ValueConfiguration', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
+    unique: 'ethAddressesAndEpoch',
     references: {
       model: 'Tx_Member',
       key: 'eth_address',
@@ -15,7 +16,7 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ValueConfiguration', {
   toEthAddress: {
     field: 'to_eth_address',
     type: DataTypes.STRING,
-    unique: 'fromEthAddressAndtoEthAddress',
+    unique: 'ethAddressesAndEpoch',
     references: {
       model: 'Tx_Member',
       key: 'eth_address',
@@ -25,24 +26,30 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ValueConfiguration', {
     field: 'epoch',
     type: DataTypes.INTEGER,
     allowNull: false,
-    unique: 'ethAdressAndEpoch',
+    unique: 'ethAddressesAndEpoch',
   },
   weight: {
     field: 'weight',
     type: DataTypes.INTEGER,
-    allowNull: false
-  }
- }, { 
-    indexes: [
-      { fields: ['from_eth_address'] },
-      { fields: ['to_eth_address'] },
-      { fields: ['epoch'] },
-    ]
-  }
-);
+    allowNull: false,
+  },
+}, {
+  indexes: [
+    { fields: ['from_eth_address'] },
+    { fields: ['to_eth_address'] },
+    { fields: ['epoch'] },
+  ],
+  validate: {
+    cannotSelfDelegate() {
+      if (this.fromEthAddress === this.toEthAddress) {
+        throw new Error('Cannot self allocate');
+      }
+    },
+  },
+});
 
-TxConfigureValueAllocation.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxValueConfiguration.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxConfigureValueAllocation,
+  TxValueConfiguration,
 };

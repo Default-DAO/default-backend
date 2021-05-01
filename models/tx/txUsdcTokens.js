@@ -3,7 +3,7 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxPooUsdc = sequelize.define('Tx_PoolUSDC', {
+const TxUsdcTokens = sequelize.define('Tx_UsdcTokens', {
   ethAddress: {
     field: 'eth_address',
     type: DataTypes.STRING,
@@ -20,16 +20,14 @@ const TxPooUsdc = sequelize.define('Tx_PoolUSDC', {
   transactionType: {
     field: 'transaction_type',
     type: DataTypes.STRING,
-    values: ['DEPOSIT', 
-             'WITHDRAW', 
-             'SWAP'],
+    values: ['DEPOSIT', 'WITHDRAW', 'SWAP'],
     allowNull: false,
   },
   amount: {
     field: 'amount', // can be positive/negative for DNT_SWAP depending on the direction
     type: DataTypes.INTEGER,
     allowNull: false,
-  }
+  },
 }, {
   indexes: [
     { fields: ['eth_address'] },
@@ -37,12 +35,13 @@ const TxPooUsdc = sequelize.define('Tx_PoolUSDC', {
   ],
 });
 
-TxLiquidityUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
+TxUsdcTokens.belongsTo(TxMember, { foreignKey: 'eth_address' });
+// TxLiquidityUsdc.belongsTo(TxMember, { foreignKey: 'eth_address' });
 /* @todo
  * In the future add the swap tx if it's a DNT swap e.g.
  * TxLiquidityUsdc.belongsTo(TxPoolSwap, {foreignKey: 'swap_tx'});
  */
 
 module.exports = {
-  TxPooUsdc,
+  TxUsdcTokens,
 };
