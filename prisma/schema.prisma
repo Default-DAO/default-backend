@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Api tables
+model ApiMember {
+  id                 Int      @id @default(autoincrement()) @map("id")
+  ethAddress         String   @unique @db.VarChar(42) @map("eth_address")
+  alias              String   @db.VarChar(42) @map("alias")
+  totalLiquidity     Int?     @map("total_liquidity")
+  totalRewardsEarned Int?     @map("total_rewards_earned")
+  netGain            Int?     @map("net_gain")
+  netPosition        Int?     @map("net_position")
+  claimed            Boolean  @default(false) @map("claimed")
+  cap                Int?     @map("cap")
+  nonce              String   @default(uuid()) @map("nonce")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // relations
+  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
+  @@map("api_member")
+}
+
+// Tx tables
+model TxMember {
+  ethAddress        String     @id @db.VarChar(42) @map("eth_address")
+  type              MemberType @map("type")
+  alias             String?    @db.VarChar(42) @map("alias")
+  createdEpoch      Int        @map("created_epoch")
+  liquidityCapUsdc  Int        @map("liquidity_cap_usdc")
+  liquidityCapEpoch Int?       @map("liquidity_cap_epoch")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  // relations
+  apiMember               ApiMember?
+  txDntStakes             TxDntStake[]
+  txDntTokens             TxDntToken[]
+  txUsdcTokens            TxUsdcToken[]
+  fromValueConfigurations TxValueConfiguration[] @relation("TxMemberToTxValueConfiguration_fromEthAddress") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
+  toValueConfigurations   TxValueConfiguration[] @relation("TxMemberToTxValueConfiguration_toEthAddress")
+  fromStakeConfigurations TxStakeConfiguration[] @relation("TxMemberToTxStakeConfiguration_fromEthAddress")
+  toStakeConfigurations   TxStakeConfiguration[] @relation("TxMemberToTxStakeConfiguration_toEthAddress")
+
+  @@index([createdEpoch], name: "tx_member_created_epoch")
+
+  @@map("tx_member")
+}
+
+model TxDntStake {
+  id           Int      @id @default(autoincrement()) @map("id")
+  ethAddress   String   @db.VarChar(42) @map("eth_address")
+  createdEpoch Int      @map("created_epoch")
+  amount       Int      @map("amount")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // relations
+  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
+
+  @@index([createdEpoch], name: "tx_dnt_stake_created_epoch")
+  @@index([ethAddress], name: "tx_dnt_stake_eth_address")
+
+  @@map("tx_dnt_stake")
+}
+
+model TxDntToken {
+  id              Int                @id @default(autoincrement()) @map("id")
+  ethAddress      String             @db.VarChar(42) @map("eth_address")
+  createdEpoch    Int                @map("created_epoch")
+  transactionType DntTransactionType @map("transaction_type")
+  amountDnt       Int                @map("amount_dnt")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  // relations
+  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
+
+  @@index([createdEpoch], name: "tx_dnt_token_created_epoch")
+  @@index([ethAddress], name: "tx_dnt_token_eth_address")
+
+  @@map("tx_dnt_token")
+}
+
+model TxProtocol {
+  epochNumber                  Int      @id @map("epoch_number")
+  dntWithdrawFee               Float    @map("dnt_withdraw_fee")
+  usdcWithdrawFee              Float    @map("usdc_withdraw_fee")
+  dntEpochRewardIssuanceAmount Int      @map("dnt_epoch_reward_issuance_amount")
+  dntRewardDistributions       Json     @map("dnt_reward_distributions")
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  @@map("tx_protocol")
+}
+
+model TxStakeConfiguration {
+  id             Int      @id @default(autoincrement()) @map("id")
+  fromEthAddress String   @db.VarChar(42) @map("from_eth_address")
+  toEthAddress   String   @db.VarChar(42) @map("to_eth_address")
+  epoch          Int      @map("epoch")
+  weight         Int      @map("weight")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // relations
+  fromTxMember TxMember @relation("TxMemberToTxStakeConfiguration_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
+  toTxMember   TxMember @relation("TxMemberToTxStakeConfiguration_toEthAddress", fields: [toEthAddress], references: [ethAddress])
+
+  @@unique([fromEthAddress, toEthAddress, epoch])
+  @@index([epoch])
+  @@index([fromEthAddress])
+  @@index([toEthAddress])
+
+  @@map("tx_stake_configuration")
+}
+
+model TxUsdcToken {
+  id              Int                 @id @default(autoincrement()) @map("id")
+  ethAddress      String              @db.VarChar(42) @map("eth_address")
+  createdEpoch    Int                 @map("created_epoch")
+  transactionType UsdcTransactionType @map("transaction_type")
+  amount          Int                 @map("amount")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // relations
+  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
+
+  @@index([createdEpoch], name: "tx_usdc_token_created_epoch")
+  @@index([ethAddress], name: "tx_usdc_token_eth_address")
+
+  @@map("tx_usdc_token")
+}
+
+model TxValueConfiguration {
+  id             Int      @id @default(autoincrement()) @map("id")
+  fromEthAddress String   @db.VarChar(42) @map("from_eth_address")
+  toEthAddress   String   @db.VarChar(42) @map("to_eth_address")
+  epoch          Int      @map("epoch")
+  weight         Int      @map("weight")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  //relations
+  fromTxMember TxMember @relation("TxMemberToTxValueConfiguration_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
+  toTxMember   TxMember @relation("TxMemberToTxValueConfiguration_toEthAddress", fields: [toEthAddress], references: [ethAddress])
+
+  @@unique([fromEthAddress, toEthAddress, epoch], name: "TxValueConfiguration_fromEthAddress_toEthAddress_epoch_key")
+  @@index([epoch], name: "tx_value_configuration_epoch")
+  @@index([fromEthAddress], name: "tx_value_configuration_from_eth_address")
+  @@index([toEthAddress], name: "tx_value_configuration_to_eth_address")
+
+  @@map("tx_value_configuration")
+}
+
+// enums
+enum MemberType {
+  ENTITY
+  PERSONAL
+}
+
+enum DntTransactionType {
+  CONTRIBUTOR_REWARD
+  LP_REWARD
+  SWAP
+  STAKE
+}
+
+enum UsdcTransactionType {
+  DEPOSIT
+  WITHDRAW
+  SWAP
+}

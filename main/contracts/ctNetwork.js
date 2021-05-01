@@ -28,13 +28,13 @@ router.get('/api/ctNetwork/getNetworkState', async (req, res) => {
 
     // pseudocode
     const networkState = TxProtocol.getLatest();
-    const txUsdcTokens = TxUsdcTokens.all.sum();
-    const poolDnt = TxDntTokens.all.sum();
+    const txUsdcToken = TxUsdcToken.all.sum();
+    const poolDnt = TxDntToken.all.sum();
 
     return {
       network: networkState,
       pools: {
-        USDCPool: txUsdcTokens,
+        USDCPool: txUsdcToken,
         DNTPool: poolDnt,
       },
     };
@@ -133,30 +133,30 @@ router.get('/api/ctNetwork/getMemberSet', async (req, res) => {
   router.post('/api/ctNetwork/registerNewMember', async (req, res) => {
     try {
       /*  @dev
-              *  request: requires metamask signature, takes params
-              *
-              *  request payload:
-              *
-              *    req = {
-              *      ethAddress: String,
-              *      alias: String,
-              *      type: String,
-              *    }
-              *
-              *  response: returns a new member object
-              *
-              *  response object:
-              *
-              *    return {
-              *      newMember: {
-              *        ethAddress: String,
-              *        alias: String,
-              *        type: 'PERSONAL' or 'ENTITY,
-              *        createdEpoch: Integer,
-              *        availableLiquidityUsdc: 100000
-              *      }
-              *    }
-              */
+                *  request: requires metamask signature, takes params
+                *
+                *  request payload:
+                *
+                *    req = {
+                *      ethAddress: String,
+                *      alias: String,
+                *      type: String,
+                *    }
+                *
+                *  response: returns a new member object
+                *
+                *  response object:
+                *
+                *    return {
+                *      newMember: {
+                *        ethAddress: String,
+                *        alias: String,
+                *        type: 'PERSONAL' or 'ENTITY,
+                *        createdEpoch: Integer,
+                *        availableLiquidityUsdc: 100000
+                *      }
+                *    }
+                */
 
       // pseudocode
       const newMember = TxMember.createNew({

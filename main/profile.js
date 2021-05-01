@@ -9,7 +9,7 @@ const { authMiddleware } = require('../utils/auth');
 
 router.get('/api/profile', async (req, res) => {
   try {
-    const member = await ApiMember.findOne({
+    const member = await prisma.apiMember.findUnique({
       where: { ethAddress: req.query.ethAddress },
     });
     if (member) {
@@ -54,7 +54,7 @@ router.get('/api/profile', async (req, res) => {
 router.post('/api/profile/claim', authMiddleware, async (req, res) => {
   try {
     const { ethAddress } = req.body;
-    const member = await ApiMember.findOne({
+    const member = await prisma.apiMember.findOne({
       where: { ethAddress },
     });
     if (member) {
@@ -68,8 +68,9 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
         cap,
       } = member; // TODO find sequelize serializer
 
-      const updated = await ApiMember.update({ claimed: true }, {
+      const updated = await prisma.apiMember.update({
         where: { id: member.id, claimed: false },
+        data: { claimed: true }
       });
 
       if (updated.length === 1 && updated[0] === 0) {

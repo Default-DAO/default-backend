@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { TxValueConfiguration } = require('../../models/tx/txValueConfiguration');
+//const { TxValueConfiguration } = require('../../models/tx/txValueConfiguration');
 const { getCurrentEpoch } = require('../../utils/epoch');
+
 
 router.post('/api/txValueAllocation/send', async (req, res) => {
   try {

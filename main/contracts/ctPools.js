@@ -47,7 +47,7 @@ router.post('/api/ctPools/withdrawUsdc', async (req, res) => {
 
     // STEP1: GET withdrawFeeUsdc from txProtocol and do amountUsdc - amountUsdc * withdrawFeeUsdc
 
-    // STEP2: ADD negative transaction to txUsdcTokens
+    // STEP2: ADD negative transaction to txUsdcToken
   } catch (err) {
     res.status(400).send({
       result: {
@@ -93,13 +93,13 @@ router.post('api/ctPools/swapTokens', async (req, res) => {
 
     // STEP1. AGGREGATE DNT TOKEN AMOUNT FROM txDntTokens
 
-    // STEP2. AGGREGATE USDC TOKEN AMOUNT FROM txUsdcTokens
+    // STEP2. AGGREGATE USDC TOKEN AMOUNT FROM txUsdcToken
 
     // STEP3. CALCULATE RATIO OF DNT vs USDC
 
     // STEP4. CALCULATE HOW MUCH TOKEN AMOUNT amount IS IN OTHER TOKEN CURRENCY
 
-    // STEP5. SAVE TRANSACTION TO txDntTOkens and txUsdcTokens ACCORDINGLY BASED ON token
+    // STEP5. SAVE TRANSACTION TO txDntTOkens and txUsdcToken ACCORDINGLY BASED ON token
   } catch (err) {
     res.status(400).send({
       result: {
@@ -118,9 +118,9 @@ router.get('/api/ctPools/getPoolShares', async (req, res) => {
       pool,
     } = req.body;
 
-    // STEP0. AGGREGATE txDntTokens. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
+    // STEP0. AGGREGATE txDntToken. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
 
-    // STEP1. AGGREGATE txUsdcTokens. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
+    // STEP1. AGGREGATE txUsdcToken. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
 
     // STEP2. FIGURE OUT SHARES IN % FOR EACH POOL
 
