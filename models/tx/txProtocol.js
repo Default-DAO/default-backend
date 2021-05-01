@@ -1,15 +1,16 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../sequelize');
 
-const TxNetwork = sequelize.define('Tx_Network', {
+//ONLY ADMIN
+const TxProtocol = sequelize.define('Tx_Protocol', {
   epochNumber: {
     field: 'epoch_number',
     type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: true // increment the primaryKey by 1 each time
   },
-  withdrawFeeDnt: { // fee applied to all DNT Liquidity withdrawls this epoch 
-    field: 'DNT_liquidity_withdraw_fee',
+  dntWithdrawFee: { // fee applied to all DNT Liquidity withdrawls this epoch 
+    field: 'dnt_withdraw_fee',
     type: DataTypes.FLOAT,
     allowNull: false,
     validates: { // is a valid percentage, starts at 1
@@ -17,8 +18,8 @@ const TxNetwork = sequelize.define('Tx_Network', {
       max: 1
     }
   },
-  withdrawFeeUSDC: { // fee applied to all USDC Liquidity withdrawls this epoch 
-    field: 'USDC_liquidity_withdraw_fee',
+  usdcWithdrawFee: { // fee applied to all USDC Liquidity withdrawls this epoch 
+    field: 'usdc_withdraw_fee',
     type: DataTypes.FLOAT,
     allowNull: false,
     validates: { // starts at 1, changes to .1 when we go on chain
@@ -26,8 +27,8 @@ const TxNetwork = sequelize.define('Tx_Network', {
       max: 1
     }
   },
-  dntEpochRewardIssuance: {
-    field: 'DNT_reward_epoch_issuance',
+  dntEpochRewardIssuanceAmount: {
+    field: 'dnt_epoch_reward_issuance_amount',
     type: DataTypes.INTEGER,
     allowNull: false,
     validates: {
@@ -35,7 +36,7 @@ const TxNetwork = sequelize.define('Tx_Network', {
     }
   },
   dntRewardDistributions: {
-    field: 'DNT_reward_distributions',
+    field: 'dnt_reward_distributions',
     type: DataTypes.JSON,
     allowNull: false
   }
@@ -66,5 +67,5 @@ const TxNetwork = sequelize.define('Tx_Network', {
 });
 
 module.exports = {
-  TxNetwork,
+  TxProtocol,
 };

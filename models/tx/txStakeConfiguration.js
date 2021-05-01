@@ -3,10 +3,11 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation', {
+const txStakeConfiguration = sequelize.define('Tx_StakeConfiguration', {
   fromEthAddress: {
     field: 'from_eth_address',
     type: DataTypes.STRING,
+    allowNull: false,
     references: {
       model: 'Tx_Member',
       key: 'eth_address',
@@ -15,7 +16,8 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation
   toEthAddress: {
     field: 'to_eth_address',
     type: DataTypes.STRING,
-    unique: 'fromEthAddressAndtoEthAddress',
+    allowNull: false,
+    unique: 'fromEthAdressAndtoEthAddress', // does this work? trying to make it so you can't self delegate.
     references: {
       model: 'Tx_Member',
       key: 'eth_address',
@@ -32,17 +34,16 @@ const TxConfigureValueAllocation = sequelize.define('Tx_ConfigureValueAllocation
     type: DataTypes.INTEGER,
     allowNull: false
   }
- }, { 
-    indexes: [
-      { fields: ['from_eth_address'] },
-      { fields: ['to_eth_address'] },
-      { fields: ['epoch'] },
-    ]
-  }
-);
+}, {
+  indexes: [
+    { fields: ['from_eth_address'] },
+    { fields: ['to_eth_address']},
+    { fields: ['epoch'] },
+  ],
+});
 
-TxConfigureValueAllocation.belongsTo(TxMember, { foreignKey: 'eth_address' });
+txStakeConfiguration.belongsTo(TxMember, { foreignKey: 'eth_address' });
 
 module.exports = {
-  TxConfigureValueAllocation,
+  txStakeConfiguration,
 };

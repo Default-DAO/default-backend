@@ -3,7 +3,7 @@ const { sequelize } = require('../sequelize');
 
 const { TxMember } = require('./txMember');
 
-const TxStakingDnt = sequelize.define('Tx_StakingDNT', {
+const TxDntStaked = sequelize.define('Tx_DntStaked', {
   ethAddress: {
     field: 'eth_address',
     type: DataTypes.STRING,
@@ -17,14 +17,14 @@ const TxStakingDnt = sequelize.define('Tx_StakingDNT', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  amountStaked: {
-    field: 'amount_staked',
+  amount: {
+    field: 'amount',
     type: DataTypes.INTEGER,
     allowNull: false,
     /* make sure amount_staked is not greater than the amount of ÐNT
       rewards in the treasury pool
     */
-  },
+  }
 }, {
   indexes: [
     { fields: ['eth_address'] },

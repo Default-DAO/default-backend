@@ -15,31 +15,21 @@ router.post('/api/ctPools/addLiquidity', async (req, res) => {
       amountUsdc
     } = req.body
 
-    // TODO: requires metamask signature, takes params
+    //STEP0: VALIDATE METAMASK SIGNATURE
 
-    const txMember = await TxMember.findOne({
-      where: {ethAddress}
-    })
-    const remainingLiquidityAvailable = txMember.availableLiquidityUsdc - amountUsdc
+    //STEP1: FIND MEMBER FROM txMember
+
+    //STEP2: GET availableCap = liquidityCapUsdc - amountUsdc TO FIGURE OUT LIMIT
+      // lastLiquidityProvidedEpoch > CURRENT EPOCH RETURN ERROR
+      // IF LOWER THAN 0 RETURN ERROR
     
-    if (remainingLiquidityAvailable >= 0) {
-      await TxPoolUsdc.create({
-        ethAddress,
-        createdEpoch: getCurrentEpoch(),
-        transactionType: "PROVIDE_USDC_LIQUIDITY",
-        amountUsdc
-      })
-    }
+    //STEP3: ADD amountUsdc TO txUsdcTokens
+      
+    //STEP4: IF availableCap = 0 
+      // RESET liquidityCapUsdc TO 50000
     
-    remainingLiquidityAvailable <= 0 ? remainingLiquidityAvailable = 50000 : null
-    
-    await TxMember.update({
-      availableLiquidityUsdc: remainingLiquidityAvailable // reset allocation cap if member reaches it
-    }, {
-      where: {
-        ethAddress
-      }
-    })
+    //STEP5: IF availableCap > 0 
+      // SAVE liquidityCapUsdc TO availableCap
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
@@ -52,58 +42,102 @@ router.post('/api/ctPools/addLiquidity', async (req, res) => {
   }
 });
 
-router.get('/api/ctPools/getPoolShares', async (req, res) => {
-  /*  @dev (KEVIN'S NOTES)
-  *  request: requires metamask signature
-  * 
-  *  response: if successsful, returns current user's ownership of both pools
-  *  
-  *  response object: 
-  * 
-  *    return {
-  *      usdcLiquidityPoolShares: {
-  *        ethAdress: req.ethAddress,
-  *        createdEpoch: txNetwork.latestEpoch,
-  *        transactionType: 'USDC_LIQUIDITY_PROVIDER_DEPOSIT'
-  *        usdcPoolShares: [all txLiquidityPoolSharesUsdc rows related to user]
-  *      },
-  *      dntLiquidityPoolShares: {
-  *        ethAdress: req.ethAddress,
-  *        createdEpoch: txNetwork.latestEpoch,
-  *        transactionType: 'USDC_LIQUIDITY_PROVIDER_DEPOSIT'
-  *        dntPoolShares: [all txLiquidityPoolShareDnt rows related to user]
-  *      }
-  *    }
-  */
+router.post('/api/ctPools/withdrawUsdc', async (req, res) => {
   try {
     const {
-      ethAddress
+      ethAddress,
+      amountUsdc
     } = req.body
 
-    //TODO: metamask signature approval
+  //STEP0: VALIDATE METAMASK SIGNATURE
 
-    const usdc = await TxLiquidityPoolSharesUsdc.findAll({
-      where: {
-        ethAddress
-      }
-    })
-    const dnt = await TxLiquidityPoolSharesDnt.findAll({
-      where: {
-        ethAddress
-      }
-    })
+  //STEP1: GET withdrawFeeUsdc from txProtocol and do amountUsdc - amountUsdc * withdrawFeeUsdc
 
-    const response = {
-      usdcLiquidityPoolShares: usdc,
-      dntPoolShares: dnt
-    }
+  //STEP2: ADD negative transaction to txUsdcTokens
 
-    res.send({ 
-      result: { 
-        response,
-        error: false 
-      } 
+  } catch(err) {
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCodde: BAD_REQUEST,
+      },
     });
+  }
+})
+
+router.post('/api/ctPools/withdrawDnt', async (req, res) => {
+  try {
+    const {
+      ethAddress,
+      amountDnt
+    } = req.body
+
+  //STEP0: VALIDATE METAMASK SIGNATURE
+
+  //STEP1: GET withdrawFeeDnt from txProtocol and do amountDnt - amountDnt * withdrawFeeDnt
+
+  //STEP2: ADD negative transaction to txDntTokens
+
+  } catch(err) {
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCodde: BAD_REQUEST,
+      },
+    });
+  }
+})
+
+// ???
+router.post('api/ctPools/swapTokens', async (req, res) => {
+  try {
+    const {
+      ethAddress,
+      token,
+      amount
+    } = req.body
+
+    //STEP0. METAMASK AUTH
+
+    //STEP1. AGGREGATE DNT TOKEN AMOUNT FROM txDntTokens
+
+    //STEP2. AGGREGATE USDC TOKEN AMOUNT FROM txUsdcTokens
+
+    //STEP3. CALCULATE RATIO OF DNT vs USDC
+
+    //STEP4. CALCULATE HOW MUCH TOKEN AMOUNT amount IS IN OTHER TOKEN CURRENCY
+
+    //STEP5. SAVE TRANSACTION TO txDntTOkens and txUsdcTokens ACCORDINGLY BASED ON token
+
+  } catch(err) {
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCodde: BAD_REQUEST,
+      },
+    });
+  }
+})
+
+//HELP
+router.get('/api/ctPools/getPoolShares', async (req, res) => {
+  try {
+    const {
+      ethAddress,
+      pool
+    } = req.body
+
+    // STEP0. AGGREGATE txDntTokens. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
+
+    // STEP1. AGGREGATE txUsdcTokens. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
+
+    // STEP2. FIGURE OUT SHARES IN % FOR EACH POOL
+
+    // STEP3. SEND {
+    // dnt: { total, amount, shares }
+    // usdc: { total, amount, shares }
+    // }
+
   } catch(err) {
     res.status(400).send({
       result: {
