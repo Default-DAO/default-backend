@@ -3,7 +3,6 @@ const {
   NOT_WHITELISTED, ALREADY_CLAIMED, INTERNAL_ERROR, BAD_REQUEST,
 } = require('../config/keys');
 
-const { ApiMember } = require('../models/api/apiMember');
 const { uploadToS3 } = require('../utils/s3');
 const { authMiddleware } = require('../utils/auth');
 
@@ -154,9 +153,10 @@ router.put('/api/profile/alias', async (req, res) => {
   try {
     const { alias, ethAddress } = req.body;
 
-    await ApiMember.update({ alias }, {
-      where: { ethAddress },
-    });
+    // await ApiMember.update({ alias }, {
+    //   where: { ethAddress },
+    // });
+    // @todo convert to prisma
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {

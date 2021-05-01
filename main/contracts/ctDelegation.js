@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { txStakeConfiguration } = require('../../models/tx/txStakeConfiguration');
+//const { txStakeConfiguration } = require('../../models/tx/txStakeConfiguration');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
 router.post('/api/txStakeConfiguration/send', async (req, res) => {
@@ -11,12 +11,13 @@ router.post('/api/txStakeConfiguration/send', async (req, res) => {
       weight,
     } = req.body;
 
-    await txStakeConfiguration.create({
-      fromEthAddress,
-      toEthAddress,
-      weight,
-      epoch: getCurrentEpoch(),
-    });
+    // await txStakeConfiguration.create({
+    //   fromEthAddress,
+    //   toEthAddress,
+    //   weight,
+    //   epoch: getCurrentEpoch(),
+    // });
+    // @todo convert to prisma
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
