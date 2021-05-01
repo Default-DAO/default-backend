@@ -31,7 +31,7 @@ CREATE TABLE "tx_member" (
     "type" "MemberType" NOT NULL,
     "alias" VARCHAR(42),
     "created_epoch" INTEGER NOT NULL,
-    "liquidity_cap_usdc" INTEGER NOT NULL,
+    "liquidity_cap_usdc" INTEGER,
     "liquidity_cap_epoch" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE "tx_protocol" (
 );
 
 -- CreateTable
-CREATE TABLE "tx_stake_configuration" (
+CREATE TABLE "tx_stake_allocation" (
     "id" SERIAL NOT NULL,
     "from_eth_address" VARCHAR(42) NOT NULL,
     "to_eth_address" VARCHAR(42) NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE "tx_usdc_token" (
 );
 
 -- CreateTable
-CREATE TABLE "tx_value_configuration" (
+CREATE TABLE "tx_value_delegation" (
     "id" SERIAL NOT NULL,
     "from_eth_address" VARCHAR(42) NOT NULL,
     "to_eth_address" VARCHAR(42) NOT NULL,
@@ -135,16 +135,16 @@ CREATE INDEX "tx_dnt_token_created_epoch" ON "tx_dnt_token"("created_epoch");
 CREATE INDEX "tx_dnt_token_eth_address" ON "tx_dnt_token"("eth_address");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "tx_stake_configuration.from_eth_address_to_eth_address_epoch_unique" ON "tx_stake_configuration"("from_eth_address", "to_eth_address", "epoch");
+CREATE UNIQUE INDEX "tx_stake_allocation.from_eth_address_to_eth_address_epoch_unique" ON "tx_stake_allocation"("from_eth_address", "to_eth_address", "epoch");
 
 -- CreateIndex
-CREATE INDEX "tx_stake_configuration.epoch_index" ON "tx_stake_configuration"("epoch");
+CREATE INDEX "tx_stake_allocation.epoch_index" ON "tx_stake_allocation"("epoch");
 
 -- CreateIndex
-CREATE INDEX "tx_stake_configuration.from_eth_address_index" ON "tx_stake_configuration"("from_eth_address");
+CREATE INDEX "tx_stake_allocation.from_eth_address_index" ON "tx_stake_allocation"("from_eth_address");
 
 -- CreateIndex
-CREATE INDEX "tx_stake_configuration.to_eth_address_index" ON "tx_stake_configuration"("to_eth_address");
+CREATE INDEX "tx_stake_allocation.to_eth_address_index" ON "tx_stake_allocation"("to_eth_address");
 
 -- CreateIndex
 CREATE INDEX "tx_usdc_token_created_epoch" ON "tx_usdc_token"("created_epoch");
@@ -153,16 +153,16 @@ CREATE INDEX "tx_usdc_token_created_epoch" ON "tx_usdc_token"("created_epoch");
 CREATE INDEX "tx_usdc_token_eth_address" ON "tx_usdc_token"("eth_address");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TxValueConfiguration_fromEthAddress_toEthAddress_epoch_key" ON "tx_value_configuration"("from_eth_address", "to_eth_address", "epoch");
+CREATE UNIQUE INDEX "TxValueDelegation_fromEthAddress_toEthAddress_epoch_key" ON "tx_value_delegation"("from_eth_address", "to_eth_address", "epoch");
 
 -- CreateIndex
-CREATE INDEX "tx_value_configuration_epoch" ON "tx_value_configuration"("epoch");
+CREATE INDEX "tx_value_delegation_epoch" ON "tx_value_delegation"("epoch");
 
 -- CreateIndex
-CREATE INDEX "tx_value_configuration_from_eth_address" ON "tx_value_configuration"("from_eth_address");
+CREATE INDEX "tx_value_delegation_from_eth_address" ON "tx_value_delegation"("from_eth_address");
 
 -- CreateIndex
-CREATE INDEX "tx_value_configuration_to_eth_address" ON "tx_value_configuration"("to_eth_address");
+CREATE INDEX "tx_value_delegation_to_eth_address" ON "tx_value_delegation"("to_eth_address");
 
 -- AddForeignKey
 ALTER TABLE "api_member" ADD FOREIGN KEY ("eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -174,16 +174,16 @@ ALTER TABLE "tx_dnt_stake" ADD FOREIGN KEY ("eth_address") REFERENCES "tx_member
 ALTER TABLE "tx_dnt_token" ADD FOREIGN KEY ("eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tx_stake_configuration" ADD FOREIGN KEY ("from_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "tx_stake_allocation" ADD FOREIGN KEY ("from_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tx_stake_configuration" ADD FOREIGN KEY ("to_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "tx_stake_allocation" ADD FOREIGN KEY ("to_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tx_usdc_token" ADD FOREIGN KEY ("eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tx_value_configuration" ADD FOREIGN KEY ("from_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "tx_value_delegation" ADD FOREIGN KEY ("from_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tx_value_configuration" ADD FOREIGN KEY ("to_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "tx_value_delegation" ADD FOREIGN KEY ("to_eth_address") REFERENCES "tx_member"("eth_address") ON DELETE CASCADE ON UPDATE CASCADE;

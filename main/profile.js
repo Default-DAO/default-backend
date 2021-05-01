@@ -5,6 +5,8 @@ const {
 
 const { uploadToS3 } = require('../utils/s3');
 const { authMiddleware } = require('../utils/auth');
+const { prisma } = require('../prisma/index');
+
 
 router.get('/api/profile', async (req, res) => {
   try {
@@ -53,11 +55,12 @@ router.get('/api/profile', async (req, res) => {
 router.post('/api/profile/claim', authMiddleware, async (req, res) => {
   try {
     const { ethAddress } = req.body;
-    const member = await prisma.apiMember.findOne({
+    const member = await prisma.apiMember.findUnique({
       where: { ethAddress },
     });
-    if (member) {
+    if (member && !member.claimed) {
       const {
+        id,
         ethAdress,
         alias,
         totalLiquidity,
@@ -67,32 +70,22 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
         cap,
       } = member; // TODO find sequelize serializer
 
-      const updated = await prisma.apiMember.update({
-        where: { id: member.id, claimed: false },
+      const updatedMember = await prisma.apiMember.update({
+        where: { id },
         data: { claimed: true }
       });
 
-      if (updated.length === 1 && updated[0] === 0) {
-        res.send({
-          result: {
-            error: true,
-            errorCode: ALREADY_CLAIMED, // better validation that this already exists
-          },
-        });
-        return;
-      }
-
-      if (updated.length > 1) {
+      if (updatedMember && !updatedMember.claimed) {
         res.status(500).send({
           result: {
             error: true,
             errorCode: INTERNAL_ERROR,
           },
         });
-        return; // log the shit out of this cause this would be weird and bad
+        return; // update failed
       }
 
-      if (updated.length === 1 && updated[0] === 1) {
+      if (updatedMember && updatedMember.claimed) {
         res.send({
           result: {
             apiMember: {
@@ -114,7 +107,7 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
     res.send({
       result: {
         error: true,
-        errorCode: NOT_WHITELISTED,
+        errorCode: ALREADY_CLAIMED, // better validation that this already exists
       },
     });
     return;
