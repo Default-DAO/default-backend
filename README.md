@@ -7,13 +7,38 @@ Create an .env file in the top level project directory and set:
 * NODE_ENV=development
 
 
+To get it running:
+```bash
+npm install
+npx prisma migrate dev
+npx prisma generate
+npm run start
+```
+
 You'll need to manually add users to the DB first. Here's a template:
 ```javascript
-const { ApiMember } = require('./models/api/apiMember');
-const { TxMember } = require('./models/tx/txMember');
+const { PrismaClient, Prisma } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-TxMember.create({ ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2', type: 'PERSONAL', createdEpoch: 0 })
-ApiMember.create({ ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2', alias: 'z', createdEpoch: 0 })
+prisma.txMember.create({
+  data: {
+    ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2',
+    type: 'PERSONAL',
+    createdEpoch: 0,
+    alias: 'z',
+  }
+});
+
+prisma.apiMember.create({
+  data: {
+    ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2',
+    alias: 'z',
+  }
+});
+
+const apiMember = prisma.apiMember.findUnique({
+  where: { ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2' },
+});
 ```
 
 Make sure ethAddress is formatted as a checksum ethereum address. THIS IS REALLY IMPORTANT.
@@ -22,11 +47,6 @@ Before saving an ethAddress to DB format it here:
 https://ethsum.netlify.app/
 
 
-To run
-
-```bash
-npm start
-```
 # Endspoints
 - ### auth
 | Endpoint  | Type | Description
