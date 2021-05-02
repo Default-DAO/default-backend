@@ -108,6 +108,7 @@ model TxStakeDelegation {
   weight         Int      @map("weight")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+  amount         Int      @map("amount")
 
   // relations
   fromTxMember TxMember @relation("TxMemberToTxStakeDelegation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
