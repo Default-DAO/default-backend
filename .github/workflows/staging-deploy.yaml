@@ -14,7 +14,11 @@ jobs:
 
       - name: Generate deployment package
         run: zip deploy.zip Procfile config/* index.js main/* package-lock.json package.json prisma/* utils/* .ebextensions/*
-        
+       
+      - name: Set version
+        id: generate-uuid
+        uses: filipstefansson/uuid-action@v1
+
       - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v16
         with:
@@ -22,7 +26,7 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: staging-default-api
           environment_name: Stagingdefaultapi-env
-          version_label: ${{github.SHA}}
+          version_label: ${{ steps.generate-uuid.outputs.uuid }}"
           region: us-west-1
           deployment_package: deploy.zip
           wait_for_deployment: true
