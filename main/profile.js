@@ -21,8 +21,9 @@ router.get('/api/profile', async (req, res) => {
         totalRewardsEarned,
         netGain,
         netPosition,
-        claimed, cap,
-      } = member; // TODO find sequelize serializer
+        claimed,
+        cap,
+      } = member; // TODO find a serializer
       res.send({
         result: {
           apiMember: {

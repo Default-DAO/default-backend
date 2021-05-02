@@ -1,12 +1,9 @@
 const router = require('express').Router();
 
 const { NOT_WHITELISTED, BAD_REQUEST } = require('../config/keys');
-const { authMsg, authMiddleware } = require('../utils/auth');
+const { authMsg } = require('../utils/auth');
 const { rateLimiter } = require('../utils/rateLimiter');
 const { prisma } = require('../prisma/index');
-// const { PrismaClient, Prisma } = require('@prisma/client')
-
-// const prisma = new PrismaClient()
 
 
 // limit repeated failed requests to login endpoint

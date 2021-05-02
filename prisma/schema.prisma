@@ -43,10 +43,10 @@ model TxMember {
   txDntStakes          TxDntStake[]
   txDntTokens          TxDntToken[]
   txUsdcTokens         TxUsdcToken[]
-  fromValueDelegations TxValueDelegation[] @relation("TxMemberToTxValueDelegation_fromEthAddress") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
-  toValueDelegations   TxValueDelegation[] @relation("TxMemberToTxValueDelegation_toEthAddress")
-  fromStakeAllocations TxStakeAllocation[] @relation("TxMemberToTxStakeAllocation_fromEthAddress")
-  toStakeAllocations   TxStakeAllocation[] @relation("TxMemberToTxStakeAllocation_toEthAddress")
+  fromValueAllocations TxValueAllocation[] @relation("TxMemberToTxValueAllocation_fromEthAddress") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
+  toValueAllocations   TxValueAllocation[] @relation("TxMemberToTxValueAllocation_toEthAddress")
+  fromStakeDelegations TxStakeDelegation[] @relation("TxMemberToTxStakeDelegation_fromEthAddress")
+  toStakeDelegations   TxStakeDelegation[] @relation("TxMemberToTxStakeDelegation_toEthAddress")
 
   @@index([createdEpoch], name: "tx_member_created_epoch")
 
@@ -100,7 +100,7 @@ model TxProtocol {
   @@map("tx_protocol")
 }
 
-model TxStakeAllocation {
+model TxStakeDelegation {
   id             Int      @id @default(autoincrement()) @map("id")
   fromEthAddress String   @db.VarChar(42) @map("from_eth_address")
   toEthAddress   String   @db.VarChar(42) @map("to_eth_address")
@@ -110,15 +110,15 @@ model TxStakeAllocation {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // relations
-  fromTxMember TxMember @relation("TxMemberToTxStakeAllocation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
-  toTxMember   TxMember @relation("TxMemberToTxStakeAllocation_toEthAddress", fields: [toEthAddress], references: [ethAddress])
+  fromTxMember TxMember @relation("TxMemberToTxStakeDelegation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
+  toTxMember   TxMember @relation("TxMemberToTxStakeDelegation_toEthAddress", fields: [toEthAddress], references: [ethAddress])
 
   @@unique([fromEthAddress, toEthAddress, epoch])
   @@index([epoch])
   @@index([fromEthAddress])
   @@index([toEthAddress])
 
-  @@map("tx_stake_allocation")
+  @@map("tx_stake_delegation")
 }
 
 model TxUsdcToken {
@@ -139,7 +139,7 @@ model TxUsdcToken {
   @@map("tx_usdc_token")
 }
 
-model TxValueDelegation {
+model TxValueAllocation {
   id             Int      @id @default(autoincrement()) @map("id")
   fromEthAddress String   @db.VarChar(42) @map("from_eth_address")
   toEthAddress   String   @db.VarChar(42) @map("to_eth_address")
@@ -149,15 +149,15 @@ model TxValueDelegation {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   //relations
-  fromTxMember TxMember @relation("TxMemberToTxValueDelegation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
-  toTxMember   TxMember @relation("TxMemberToTxValueDelegation_toEthAddress", fields: [toEthAddress], references: [ethAddress])
+  fromTxMember TxMember @relation("TxMemberToTxValueAllocation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
+  toTxMember   TxMember @relation("TxMemberToTxValueAllocation_toEthAddress", fields: [toEthAddress], references: [ethAddress])
 
-  @@unique([fromEthAddress, toEthAddress, epoch], name: "TxValueDelegation_fromEthAddress_toEthAddress_epoch_key")
-  @@index([epoch], name: "tx_value_delegation_epoch")
-  @@index([fromEthAddress], name: "tx_value_delegation_from_eth_address")
-  @@index([toEthAddress], name: "tx_value_delegation_to_eth_address")
+  @@unique([fromEthAddress, toEthAddress, epoch], name: "TxValueAllocation_fromEthAddress_toEthAddress_epoch_key")
+  @@index([epoch], name: "tx_value_allocation_epoch")
+  @@index([fromEthAddress], name: "tx_value_allocation_from_eth_address")
+  @@index([toEthAddress], name: "tx_value_allocation_to_eth_address")
 
-  @@map("tx_value_delegation")
+  @@map("tx_value_allocation")
 }
 
 // enums
