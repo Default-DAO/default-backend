@@ -116,7 +116,7 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
@@ -137,7 +137,7 @@ router.put('/api/profile/image', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
@@ -157,7 +157,7 @@ router.put('/api/profile/alias', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }

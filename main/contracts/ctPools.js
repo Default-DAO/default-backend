@@ -30,7 +30,7 @@ router.post('/api/ctPools/addLiquidity', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
@@ -52,7 +52,7 @@ router.post('/api/ctPools/withdrawUsdc', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
@@ -74,7 +74,7 @@ router.post('/api/ctPools/withdrawDnt', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
@@ -104,7 +104,7 @@ router.post('api/ctPools/swapTokens', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
@@ -132,7 +132,7 @@ router.get('/api/ctPools/getPoolShares', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
