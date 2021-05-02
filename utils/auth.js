@@ -3,7 +3,10 @@ const ethUtil = require('ethereumjs-util');
 const uuid = require('uuid');
 
 const { INVALID_SIGNATURE } = require('../config/keys');
-const { ApiMember } = require('../models/api/apiMember');
+
+const { PrismaClient, Prisma } = require('@prisma/client')
+
+const prisma = new PrismaClient()
 
 const isCheckSumAddress = (ethAddress) => ethUtil.toChecksumAddress(ethAddress) === ethAddress;
 
@@ -53,13 +56,14 @@ const isValidSignature = (ethAddress, nonce, chainId, signature) => {
 const authMiddleware = async (req, res, next) => {
   try {
     const { signature, ethAddress, chainId } = req.body || req.query;
-    const member = await ApiMember.findOne({
+    const member = await prisma.apiMember.findUnique({
       where: { ethAddress },
     });
 
     if (member && isValidSignature(ethAddress, member.nonce, chainId, signature)) {
-      await ApiMember.update({ nonce: uuid.v4() }, {
+      await prisma.apiMember.update({
         where: { id: member.id },
+        data: { nonce: uuid.v4() },
       });
 
       next();

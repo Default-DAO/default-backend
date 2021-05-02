@@ -4,7 +4,7 @@ router.get('/api/ctProtocol/getState', async (req, res) => {
   try {
     // STEP0. GET PROTOCOL STATE FROM txProtocol
 
-    // STEP1. GET ALL USDC TRANSACTIONS FROM txUsdcTokens AND AGGREGATE TOTAL AMOUNT
+    // STEP1. GET ALL USDC TRANSACTIONS FROM txUsdcToken AND AGGREGATE TOTAL AMOUNT
 
     // STEP2. GET ALL DNT TRANSACTIONS FROM txDntTokens AND AGGREGATE TOTAL AMOUNT
 
@@ -19,8 +19,8 @@ router.get('/api/ctProtocol/getState', async (req, res) => {
   }
 });
 
-//HELP
-//TO BE RUN EVERY MONDAY
+// HELP
+// TO BE RUN EVERY MONDAY
 router.post('/api/ctProtocol/incrementEpoch', async (req, res) => {
   try {
     // STEP0. GET PROTOCOL STATE FROM txProtocol AND GET EPOCH ISSUEANCE
@@ -38,7 +38,6 @@ router.post('/api/ctProtocol/incrementEpoch', async (req, res) => {
   } catch (err) {
     res.status(400).send(err);
   }
-})
-
+});
 
 module.exports = router;

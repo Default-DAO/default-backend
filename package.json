@@ -5,11 +5,17 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=development node index.js"
+    "start": "NODE_ENV=development node index.js",
+    "debug": "NODE_ENV=development node inspect index.js",
+    "prod": "NODE_ENV=prodduction pm2 start npm --name default-api -i 1 -- start --wait-ready",
+    "postprod": "node ./node_modules/pm2/bin/pm2 logs",
+    "stop:prod": "pm2 stop default-api",
+    "migrate": "npx prisma migrate deploy"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^2.21.2",
     "@types/ethereumjs-util": "^6.1.0",
     "aws-sdk": "^2.894.0",
     "body-parser": "^1.19.0",
@@ -21,13 +27,14 @@
     "express-rate-limit": "^5.2.6",
     "pg": "^8.6.0",
     "pg-hstore": "^2.3.3",
-    "sequelize": "^6.6.2",
+    "pm2": "^4.5.6",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-prismatik": "^2.2.0",
     "eslint-plugin-import": "^2.22.1",
-    "sqlite3": "^5.0.2"
+    "prisma": "^2.21.2"
   }
 }

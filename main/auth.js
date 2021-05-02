@@ -1,18 +1,20 @@
 const router = require('express').Router();
 
 const { NOT_WHITELISTED, BAD_REQUEST } = require('../config/keys');
-const { authMsg, authMiddleware } = require('../utils/auth');
+const { authMsg } = require('../utils/auth');
 const { rateLimiter } = require('../utils/rateLimiter');
-const { ApiMember } = require('../models/api/apiMember');
+const { prisma } = require('../prisma/index');
+
 
 // limit repeated failed requests to login endpoint
 router.use('/api/auth', rateLimiter);
 
 router.get('/api/auth', async (req, res) => {
   try {
-    const member = await ApiMember.findOne({
+    const member = await prisma.apiMember.findUnique({
       where: { ethAddress: req.query.ethAddress },
     });
+
 
     if (member) {
       const { content } = authMsg.message;
@@ -36,18 +38,10 @@ router.get('/api/auth', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
-});
-
-// if you can get a response you are successfully authed
-router.get('/api/auth/secret', authMiddleware, async (req, res) => {
-  res.send({ result: { success: true, error: false } });
-});
-router.post('/api/auth/secret', authMiddleware, async (req, res) => {
-  res.send({ result: { success: true, error: false } });
 });
 
 module.exports = router;
