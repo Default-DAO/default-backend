@@ -5,10 +5,10 @@ const cors = require('cors');
 
 const authentication = require('./main/auth');
 const profile = require('./main/profile');
-const allocation = require('./main/contracts/ctAllocation');
+const value = require('./main/contracts/ctValue');
 const network = require('./main/contracts/ctNetwork');
 const pools = require('./main/contracts/ctPools');
-const staking = require('./main/contracts/ctDelegation');
+const stake = require('./main/contracts/ctStake');
 
 const { sendWrapped, wrappedError } = require('./utils/wrappedResponse');
 
@@ -24,10 +24,10 @@ app.use(bodyParser.json());
 
 app.use(authentication);
 app.use(profile);
-app.use(allocation);
+app.use(value);
 app.use(network);
 app.use(pools);
-app.use(staking);
+app.use(stake);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console

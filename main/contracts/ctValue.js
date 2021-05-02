@@ -1,57 +1,61 @@
 const router = require('express').Router();
-const { BAD_REQUEST } = require('../../config/keys');
+const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
+const { getCurrentEpoch } = require('../../utils/epoch');
 
-// If the person does not run this request by end of the epoch, the available stakes get distributed automatically according to current ownership of the network
-router.post('/api/ctValue/configure', async (req, res) => {
+const { PrismaClient, Prisma } = require('@prisma/client')
+const prisma = new PrismaClient()
+
+const { authMiddleware } = require('../utils/auth');
+
+router.post('/api/txValueConfiguration/send', authMiddleware, async (req, res) => {
   try {
-    // configurations: [{
-    //   fromEthAddress: String,
-    //   toEthAddress: String,
-    //   weight: Number,
-    //   epoch: Number
-    // }]
     const {
       configurations,
-      ethAddress,
     } = req.body;
 
-    // QUESTIONS:
-    // This doesn't add the value back to txDntTokens for now, and tokens will be added during reward issuance right?
+    console.log(configurations);
 
-    // STEP0: VALIDATE Metamask signature
-
-    // STEP1. ADD configurations TO txValueConfiguration
+    const valueConfigurations = await prisma.txStakeConfiguration.createMany({
+      data: configurations,
+    });
+    console.log(valueConfigurations);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
+    console.log(err);
+
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
 });
 
-router.get('/api/ctValue', async (req, res) => {
+router.get('/api/txValueConfiguration', authMiddleware, async (req, res) => {
   try {
     const {
-      ethAddress,
+      fromEthAddress,
+      toEthAddress,
+      epoch,
+      page,
     } = req.body;
 
-    // STEP0: VALIDATE METAMASK SIGNATURE
-
-    // STEP1. GET ALL txValueConfiguration
-
-    // STEP2. AGGREGATE ALL txValueConfiguration AND CREATE amount
-
-    // STEP3. SEND {
-    //   amount,
-    //   configurations
-    // }
+    const valueConfigurations = await prisma.txValueConfiguration.findMany({
+      where: {
+        fromEthAddress,
+        toEthAddress,
+        epoch,
+      },
+      skip: page * PAGINATION_LIMIT,
+      take: PAGINATION_LIMIT,
+    });
+    console.log(valueConfigurations);
 
     res.send({
       result: {
+        valueConfigurations,
         error: false,
       },
     });
@@ -59,7 +63,7 @@ router.get('/api/ctValue', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }

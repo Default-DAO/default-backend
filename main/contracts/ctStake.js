@@ -1,64 +1,59 @@
 const router = require('express').Router();
-const { BAD_REQUEST } = require('../../config/keys');
+const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
+const { getCurrentEpoch } = require('../../utils/epoch');
 
-// HELP
-router.post('/api/ctStake/configure', async (req, res) => {
+const { PrismaClient, Prisma } = require('@prisma/client')
+const prisma = new PrismaClient()
+
+const { authMiddleware } = require('../utils/auth');
+
+router.post('/api/txStakeConfiguration/send', authMiddleware, async (req, res) => {
   try {
-    // configurations: [{
-    //   fromEthAddress: String,
-    //   toEthAddress: String,
-    //   weight: Number,
-    //   epoch: Number
-    // }]
     const {
       configurations,
-      stakeAmount,
-      ethAddress,
     } = req.body;
 
-    // QUESTIONS:
-    // How much can you stake? Is there a limit to how much you can stake based on how much you have in the pool?
+    console.log(configurations);
 
-    // STEP0: VALIDATE Metamask signature
-
-    // STEP1. SUBTRACT stakeAmount FROM txDntTokens
-
-    // STEP2. CHECK AMOUNT AVAILABLE IF TRANSACTION CAN GO THROUGH
-
-    // STEP3. ADD stakeAmount TO tx txDntStaked
-
-    // STEP4. INSERT configurations TO txStakeConfiguration
+    const stakeConfigurations = await prisma.txStakeConfiguration.createMany({
+      data: configurations,
+    });
+    console.log(stakeConfigurations);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
 });
 
-router.get('/api/ctStake', async (req, res) => {
+router.get('/api/txStakeConfiguration', authMiddleware, async (req, res) => {
   try {
     const {
-      ethAddress,
-    } = req.query;
+      fromEthAddress,
+      toEthAddress,
+      epoch,
+      page,
+    } = req.body;
 
-    // STEP0: VALIDATE METAMASK SIGNATURE
-
-    // STEP1. GET all txStakeConfigurations
-
-    // STEP2. AGGREGATE all txStakeConfigurations and make stakeAmount
-
-    // STEP3. SEND {
-    //   amount,
-    //   configurations
-    // }
+    const stakeConfigurations = await prisma.txStakeConfiguration.findMany({
+      where: {
+        fromEthAddress,
+        toEthAddress,
+        epoch,
+      },
+      skip: page * PAGINATION_LIMIT,
+      take: PAGINATION_LIMIT,
+    });
+    console.log(stakeConfigurations);
 
     res.send({
       result: {
+        stakeConfigurations,
         error: false,
       },
     });
@@ -66,7 +61,7 @@ router.get('/api/ctStake', async (req, res) => {
     res.status(400).send({
       result: {
         error: true,
-        errorCodde: BAD_REQUEST,
+        errorCode: BAD_REQUEST,
       },
     });
   }
