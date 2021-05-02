@@ -37,10 +37,10 @@ router.get('/api/ctNetwork/getNetworkState', async (req, res) => {
     // Dnt
     const totalDnt = await prisma.txUsdcToken.aggregate({
       where: {
-        OR: {[
+        OR: [
           { transactionType: "CONTRIBUTOR_REWARD" },
           { transactionType: "LP_REWARD" }
-        ]}
+        ],
       },
       sum: {
         amountDnt: true

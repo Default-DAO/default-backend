@@ -5,7 +5,7 @@ const { getCurrentEpoch } = require('../../utils/epoch');
 const { PrismaClient, Prisma } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-const { authMiddleware } = require('../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
 router.post('/api/txValueConfiguration/send', authMiddleware, async (req, res) => {
   try {

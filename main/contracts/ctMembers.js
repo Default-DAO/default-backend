@@ -5,7 +5,7 @@ const { getCurrentEpoch } = require('../../utils/epoch');
 const { PrismaClient, Prisma } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-const { authMiddleware } = require('../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
 router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
@@ -30,39 +30,39 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
   }
 }),
 
-router.get('/api/ctMember/getMember', async (req, res) => {
-  try {
-    const {
-      ethAddress,
-      alias,
-    } = req.body;
-
-    const member = await prisma.txMember.findUnique({
-      where: {
+  router.get('/api/ctMember/getMember', async (req, res) => {
+    try {
+      const {
         ethAddress,
         alias,
-      },
-    });
-    console.log(member);
+      } = req.body;
 
-    res.send({
-      result: {
-        member,
-        error: false,
-      },
-    });
-  } catch (err) {
-    res.status(400).send(err);
-  }
-}),
+      const member = await prisma.txMember.findUnique({
+        where: {
+          ethAddress,
+          alias,
+        },
+      });
+      console.log(member);
 
-router.post('/api/ctMember/registerNewMember', async (req, res) => {
-  try {
-  //STEP0. CHECK WHITELIST DB FOR ETH ADDRESS
+      res.send({
+        result: {
+          member,
+          error: false,
+        },
+      });
+    } catch (err) {
+      res.status(400).send(err);
+    }
+  }),
 
-  //STEP1. REGISTER MEMBER
+  router.post('/api/ctMember/registerNewMember', async (req, res) => {
+    try {
+      //STEP0. CHECK WHITELIST DB FOR ETH ADDRESS
 
-  } catch (err) {
-    res.status(400).send(err);
-  }
-});
+      //STEP1. REGISTER MEMBER
+
+    } catch (err) {
+      res.status(400).send(err);
+    }
+  });
