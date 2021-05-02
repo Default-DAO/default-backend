@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=production pm2 start index.js --name default-api -i 2",
-    "prestart": "npx prisma generate && npm install pm2 -g && pm2 update",
-    "poststart": "pm2 logs",
-    "stop": "pm2 stop default-api",
+    "start": "NODE_ENV=production ./node_modules/pm2/bin/pm2 start index.js --name default-api -i 2",
+    "prestart": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
+    "poststart": "./node_modules/pm2/bin/pm2 logs",
+    "stop": "./node_modules/pm2/bin/pm2 stop default-api",
     "migrate": "npx prisma migrate deploy",
     "debug": "NODE_ENV=development node inspect index.js",
     "dev": "NODE_ENV=development node index.js"
