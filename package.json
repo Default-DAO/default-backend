@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "NODE_ENV=production ./node_modules/pm2/bin/pm2 start index.js --name default-api -i 2",
-    "prestart": "npx prisma generate",
+    "prestart": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
     "poststart": "./node_modules/pm2/bin/pm2 logs",
     "stop": "./node_modules/pm2/bin/pm2 stop default-api",
     "migrate": "npx prisma migrate deploy",
