@@ -6,6 +6,35 @@ const { prisma } = require('../../prisma/index')
 
 const { authMiddleware } = require('../../utils/auth');
 
+router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => {
+  try {
+    const {
+      ethAddress,
+      amountDnt,
+    } = req.body;
+
+    console.log(ethAddress, amountDnt);
+
+    const stake = await prisma.txDntToken.create({
+      data: {
+        ethAddress,
+        amountDnt,
+        transactionType: 'STAKE'
+      },
+    });
+    console.log(stake);
+
+    res.send({ result: { success: true, error: false } });
+  } catch (err) {
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
 router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
   try {
     const {
