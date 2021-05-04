@@ -55,15 +55,4 @@ router.get('/api/ctMember/getMember', async (req, res) => {
   }
 }),
 
-router.post('/api/ctMember/registerNewMember', async (req, res) => {
-  try {
-  //STEP0. CHECK WHITELIST DB FOR ETH ADDRESS
-
-  //STEP1. REGISTER MEMBER
-
-  } catch (err) {
-    res.status(400).send(err);
-  }
-});
-
 module.exports = router;

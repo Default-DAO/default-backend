@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=development node index.js",
+    "start": "pm2-runtime start ecosystem.config.js --env production",
+    "prestart": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
+    "poststart": "node ./node_modules/pm2/bin/pm2 logs",
+    "stop": "./node_modules/pm2/bin/pm2 stop default-api",
+    "migrate": "npx prisma migrate deploy",
     "debug": "NODE_ENV=development node inspect index.js",
-    "prod": "NODE_ENV=prodduction pm2 start npm --name default-api -i 1 -- start --wait-ready",
-    "postprod": "node ./node_modules/pm2/bin/pm2 logs",
-    "stop:prod": "pm2 stop default-api",
-    "migrate": "npx prisma migrate deploy"
+    "dev": "NODE_ENV=development node index.js"
   },
   "author": "",
   "license": "ISC",
