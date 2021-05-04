@@ -6,7 +6,7 @@ const cors = require('cors');
 const authentication = require('./main/auth');
 const profile = require('./main/profile');
 const value = require('./main/contracts/ctValue');
-const network = require('./main/contracts/ctNetwork');
+const protocol = require('./main/contracts/ctProtocol');
 const pools = require('./main/contracts/ctPools');
 const stake = require('./main/contracts/ctStake');
 
@@ -25,7 +25,7 @@ app.use(bodyParser.json());
 app.use(authentication);
 app.use(profile);
 app.use(value);
-app.use(network);
+app.use(protocol);
 app.use(pools);
 app.use(stake);
 

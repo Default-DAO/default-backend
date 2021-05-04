@@ -2,23 +2,22 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index')
 
 const { authMiddleware } = require('../../utils/auth');
 
-router.post('/api/txValueConfiguration/send', authMiddleware, async (req, res) => {
+router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
   try {
     const {
-      configurations,
+      allocations,
     } = req.body;
 
-    console.log(configurations);
+    console.log(allocations);
 
-    const valueConfigurations = await prisma.txStakeConfiguration.createMany({
-      data: configurations,
+    const valueAllocations = await prisma.txValueAllocation.createMany({
+      data: allocations,
     });
-    console.log(valueConfigurations);
+    console.log(valueAllocations);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
@@ -33,7 +32,7 @@ router.post('/api/txValueConfiguration/send', authMiddleware, async (req, res) =
   }
 });
 
-router.get('/api/txValueConfiguration', authMiddleware, async (req, res) => {
+router.get('/api/txValueAllocation', authMiddleware, async (req, res) => {
   try {
     const {
       fromEthAddress,
@@ -42,7 +41,7 @@ router.get('/api/txValueConfiguration', authMiddleware, async (req, res) => {
       page,
     } = req.body;
 
-    const valueConfigurations = await prisma.txValueConfiguration.findMany({
+    const valueAllocations = await prisma.txValueAllocation.findMany({
       where: {
         fromEthAddress,
         toEthAddress,
@@ -51,11 +50,11 @@ router.get('/api/txValueConfiguration', authMiddleware, async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(valueConfigurations);
+    console.log(valueAllocations);
 
     res.send({
       result: {
-        valueConfigurations,
+        valueAllocations,
         error: false,
       },
     });
