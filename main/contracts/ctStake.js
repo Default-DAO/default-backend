@@ -2,23 +2,22 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index')
 
 const { authMiddleware } = require('../../utils/auth');
 
-router.post('/api/txStakeConfiguration/send', authMiddleware, async (req, res) => {
+router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
   try {
     const {
-      configurations,
+      delegations,
     } = req.body;
 
-    console.log(configurations);
+    console.log(delegations);
 
-    const stakeConfigurations = await prisma.txStakeConfiguration.createMany({
-      data: configurations,
+    const stakeDelegations = await prisma.txStakeDelegation.createMany({
+      data: delegations,
     });
-    console.log(stakeConfigurations);
+    console.log(stakeDelegations);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
@@ -31,7 +30,7 @@ router.post('/api/txStakeConfiguration/send', authMiddleware, async (req, res) =
   }
 });
 
-router.get('/api/txStakeConfiguration', authMiddleware, async (req, res) => {
+router.get('/api/txStakeDelegation', authMiddleware, async (req, res) => {
   try {
     const {
       fromEthAddress,
@@ -40,7 +39,7 @@ router.get('/api/txStakeConfiguration', authMiddleware, async (req, res) => {
       page,
     } = req.body;
 
-    const stakeConfigurations = await prisma.txStakeConfiguration.findMany({
+    const stakeDelegations = await prisma.txStakeDelegation.findMany({
       where: {
         fromEthAddress,
         toEthAddress,
@@ -49,11 +48,11 @@ router.get('/api/txStakeConfiguration', authMiddleware, async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(stakeConfigurations);
+    console.log(stakeDelegations);
 
     res.send({
       result: {
-        stakeConfigurations,
+        stakeDelegations,
         error: false,
       },
     });
