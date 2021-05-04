@@ -2,10 +2,9 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index')
 
-const { authMiddleware } = require('../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
 router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
   try {

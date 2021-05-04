@@ -2,10 +2,9 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index')
 
-const { authMiddleware } = require('../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
 router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
@@ -66,3 +65,5 @@ router.post('/api/ctMember/registerNewMember', async (req, res) => {
     res.status(400).send(err);
   }
 });
+
+module.exports = router;

@@ -2,8 +2,9 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index');
+
+const { authMiddleware } = require('../../utils/auth');
 
 router.get('/api/ctProtocol/getState', async (req, res) => {
   try {
@@ -37,10 +38,10 @@ router.get('/api/ctProtocol/getState', async (req, res) => {
     // Dnt
     const totalDnt = await prisma.txUsdcToken.aggregate({
       where: {
-        OR: {[
+        OR: [
           { transactionType: "CONTRIBUTOR_REWARD" },
           { transactionType: "LP_REWARD" }
-        ]}
+        ]
       },
       sum: {
         amountDnt: true
@@ -233,3 +234,5 @@ router.post('/api/ctProtocol/incrementEpoch', authMiddleware, async (req, res) =
     });
   }
 });
+
+module.exports = router;
