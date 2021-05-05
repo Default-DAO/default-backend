@@ -120,7 +120,7 @@ router.get('/api/ctPools/getPoolShares', async (req, res) => {
     const {
       ethAddress,
       pool,
-    } = req.body;
+    } = req.query;
 
     // STEP0. AGGREGATE txDntToken. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
 

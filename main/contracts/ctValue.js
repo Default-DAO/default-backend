@@ -39,7 +39,7 @@ router.get('/api/txValueAllocation', authMiddleware, async (req, res) => {
       toEthAddress,
       epoch,
       page,
-    } = req.body;
+    } = req.query;
 
     const valueAllocations = await prisma.txValueAllocation.findMany({
       where: {

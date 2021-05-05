@@ -10,7 +10,7 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
     const {
       page,
-    } = req.body;
+    } = req.query;
 
     const members = await prisma.txMember.findMany({
       skip: page * PAGINATION_LIMIT,
@@ -34,7 +34,7 @@ router.get('/api/ctMember/getMember', async (req, res) => {
     const {
       ethAddress,
       alias,
-    } = req.body;
+    } = req.query;
 
     const member = await prisma.txMember.findUnique({
       where: {

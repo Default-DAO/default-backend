@@ -10,3 +10,4 @@ node_modules
 
 #SQLite
 db.sqlite
+prisma/seed.js

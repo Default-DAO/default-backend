@@ -5,7 +5,7 @@ const ALREADY_CLAIMED = 'alreadyClaimed';
 const BAD_REQUEST = 'badRequest';
 const INTERNAL_ERROR = 'internalError';
 
-const PAGINATION_LIMIT = 50
+const PAGINATION_LIMIT = 200
 
 module.exports = {
   INVALID_SIGNATURE,

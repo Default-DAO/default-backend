@@ -59,20 +59,24 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/api/txStakeDelegation', authMiddleware, async (req, res) => {
+router.get('/api/txStakeDelegation', async (req, res) => {
   try {
     const {
       fromEthAddress,
-      toEthAddress,
-      epoch,
       page,
-    } = req.body;
+    } = req.query;
+
+    console.log('txStake', fromEthAddress, page)
+
+    const epoch = await getCurrentEpoch();
 
     const stakeDelegations = await prisma.txStakeDelegation.findMany({
       where: {
         fromEthAddress,
-        toEthAddress,
         epoch,
+      },
+      include: {
+        toTxMember: true
       },
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
