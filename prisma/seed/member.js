@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client')
-const shortid = require('shortid')
 const prisma = new PrismaClient()
 
 const members = {
@@ -45,46 +44,57 @@ const randomEthAddresses = [
 
 async function apiMember() {
   const fullyallocated = await prisma.apiMember.upsert({
-    ethAddress: members.fullyallocated.ethAddress,
-    alias: members.fullyallocated.alias,
-    totalLiquidity: 100000,
-    totalRewardsEarned: 50000,
-    claimed: true,
-    cap: 100000
+    where: { ethAddress: members.fullyallocated.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.fullyallocated.ethAddress,
+      totalLiquidity: 100000,
+      totalRewardsEarned: 50000,
+      claimed: true,
+      cap: 100000,
+    }
   })
 
   const soma = await prisma.apiMember.upsert({
-    ethAddress: members.soma.ethAddress,
-    alias: members.soma.alias,
-    totalLiquidity: 100000,
-    totalRewardsEarned: 50000,
-    claimed: true,
-    cap: 100000
+    where: { ethAddress: members.soma.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.soma.ethAddress,
+      totalLiquidity: 100000,
+      totalRewardsEarned: 50000,
+      claimed: true,
+      cap: 100000
+    }
   })
 
   const zaz = await prisma.apiMember.upsert({
-    ethAddress: members.zaz.ethAddress,
-    alias: members.zaz.alias,
-    totalLiquidity: 100000,
-    totalRewardsEarned: 50000,
-    claimed: true,
-    cap: 100000
+    where: { ethAddress: members.zaz.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.zaz.ethAddress,
+      totalLiquidity: 100000,
+      totalRewardsEarned: 50000,
+      claimed: true,
+      cap: 100000,
+    }
   })
 
   const scottsgc = await prisma.apiMember.upsert({
-    ethAddress: members.scottsgc.ethAddress,
-    alias: members.scottsgc.alias,
-    totalLiquidity: 100000,
-    totalRewardsEarned: 50000,
-    claimed: false,
-    cap: 100000
+    where: { ethAddress: members.scottsgc.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.scottsgc.ethAddress,
+      totalLiquidity: 100000,
+      totalRewardsEarned: 50000,
+      claimed: false,
+      cap: 100000,
+    }
   })
 
   let randomApiMembers = []
   randomEthAddresses.forEach((address, i) => {
     randomApiMembers.push({
       ethAddress: address,
-      alias: 'user' + i,
       totalLiquidity: 100000,
       totalRewardsEarned: 50000,
       claimed: true,
@@ -92,51 +102,68 @@ async function apiMember() {
     })
   })
   await prisma.apiMember.createMany({
-    data: randomApiMembers
+    data: randomApiMembers,
+    skipDuplicates: true,
   })
 }
 
 async function txMember() {
   const fullyallocated = await prisma.txMember.upsert({
-    ethAddress: members.fullyallocated.ethAddress,
-    type: 'personal',
-    alias: members.fullyallocated.alias,
-    createdEpoch: 0,
-    liquidityCapUsdc: 100000,
-    liquidityCapEpoch: 100000
-  }) 
+    where: { ethAddress: members.fullyallocated.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.fullyallocated.ethAddress,
+      type: 'PERSONAL',
+      alias: members.fullyallocated.alias,
+      createdEpoch: 0,
+      liquidityCapUsdc: 100000,
+      liquidityCapEpoch: 100000,
+    }
+  })
 
   const soma = await prisma.txMember.upsert({
-    ethAddress: members.soma.ethAddress,
-    type: 'personal',
-    alias: members.soma.alias,
-    createdEpoch: 0,
-    liquidityCapUsdc: 100000,
-    liquidityCapEpoch: 100000
-  }) 
+    where: { ethAddress: members.soma.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.soma.ethAddress,
+      type: 'PERSONAL',
+      alias: members.soma.alias,
+      createdEpoch: 0,
+      liquidityCapUsdc: 100000,
+      liquidityCapEpoch: 100000,
+    }
+  })
 
   const zaz = await prisma.txMember.upsert({
-    ethAddress: members.zaz.ethAddress,
-    type: 'personal',
-    alias: members.zaz.alias,
-    createdEpoch: 0,
-    liquidityCapUsdc: 100000,
-    liquidityCapEpoch: 100000
-  }) 
+    where: { ethAddress: members.zaz.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.zaz.ethAddress,
+      type: 'PERSONAL',
+      alias: members.zaz.alias,
+      createdEpoch: 0,
+      liquidityCapUsdc: 100000,
+      liquidityCapEpoch: 100000,
+    }
+  })
 
   const scottsgc = await prisma.txMember.upsert({
-    ethAddress: members.scottsgc.ethAddress,
-    type: 'entity',
-    alias: members.scottsgc.alias,
-    createdEpoch: 0,
-    liquidityCapUsdc: 100000,
-    liquidityCapEpoch: 100000
-  }) 
+    where: { ethAddress: members.scottsgc.ethAddress },
+    update: {},
+    create: {
+      ethAddress: members.scottsgc.ethAddress,
+      type: 'ENTITY',
+      alias: members.scottsgc.alias,
+      createdEpoch: 0,
+      liquidityCapUsdc: 100000,
+      liquidityCapEpoch: 100000,
+    }
+  })
   let randomApiMembers = []
   randomEthAddresses.forEach((address, i) => {
     randomApiMembers.push({
       ethAddress: address,
-      type: 'personal',
+      type: 'PERSONAL',
       alias: 'user' + i,
       createdEpoch: (i % 3) + 1,
       liquidityCapUsdc: 100000,
@@ -144,7 +171,8 @@ async function txMember() {
     })
   })
   await prisma.txMember.createMany({
-    data: randomApiMembers
+    data: randomApiMembers,
+    skipDuplicates: true,
   })
 }
 

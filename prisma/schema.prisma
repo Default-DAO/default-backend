@@ -11,7 +11,6 @@ datasource db {
 model ApiMember {
   id                 Int      @id @default(autoincrement()) @map("id")
   ethAddress         String   @unique @db.VarChar(42) @map("eth_address")
-  alias              String   @db.VarChar(42) @map("alias")
   totalLiquidity     Int?     @map("total_liquidity")
   totalRewardsEarned Int?     @map("total_rewards_earned")
   netGain            Int?     @map("net_gain")
@@ -40,7 +39,6 @@ model TxMember {
 
   // relations
   apiMember            ApiMember?
-  txDntStakes          TxDntStake[]
   txDntTokens          TxDntToken[]
   txUsdcTokens         TxUsdcToken[]
   fromValueAllocations TxValueAllocation[] @relation("TxMemberToTxValueAllocation_fromEthAddress") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
@@ -51,23 +49,6 @@ model TxMember {
   @@index([createdEpoch], name: "tx_member_created_epoch")
 
   @@map("tx_member")
-}
-
-model TxDntStake {
-  id           Int      @id @default(autoincrement()) @map("id")
-  ethAddress   String   @db.VarChar(42) @map("eth_address")
-  createdEpoch Int      @map("created_epoch")
-  amount       Int      @map("amount")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // relations
-  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
-
-  @@index([createdEpoch], name: "tx_dnt_stake_created_epoch")
-  @@index([ethAddress], name: "tx_dnt_stake_eth_address")
-
-  @@map("tx_dnt_stake")
 }
 
 model TxDntToken {
