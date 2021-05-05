@@ -10,32 +10,18 @@ const { prisma } = require('../prisma/index');
 
 router.get('/api/profile', async (req, res) => {
   try {
-    const member = await prisma.apiMember.findUnique({
-      where: { ethAddress: req.query.ethAddress },
+    const { ethAddress } = req.query;
+    const txMember = await prisma.txMember.findUnique({
+      where: { ethAddress },
+    })
+    const apiMember = await prisma.apiMember.findUnique({
+      where: { ethAddress },
     });
-    if (member) {
-      const {
-        ethAdress,
-        alias,
-        totalLiquidity,
-        totalRewardsEarned,
-        netGain,
-        netPosition,
-        claimed,
-        cap,
-      } = member; // TODO find a serializer
+    if (txMember && apiMember) {
       res.send({
         result: {
-          apiMember: {
-            ethAdress,
-            alias,
-            totalLiquidity,
-            totalRewardsEarned,
-            netGain,
-            netPosition,
-            claimed,
-            cap,
-          },
+          apiMember,
+          txMember,
           error: false, // TODO use wrapper to return every response so we can standardize
         },
       });
@@ -54,65 +40,46 @@ router.get('/api/profile', async (req, res) => {
 });
 
 router.post('/api/profile/claim', authMiddleware, async (req, res) => {
+  // @todo need to catch exceptions better and provide better error messages:
+  // what happens when a user submits an alias that is too long? we should
+  // provide a better error message.
   try {
-    const { ethAddress } = req.body;
-    const member = await prisma.apiMember.findUnique({
+    const { ethAddress, alias } = req.body;
+    const txMember = await prisma.txMember.findUnique({
       where: { ethAddress },
     });
-    if (member && !member.claimed) {
-      const {
-        id,
-        ethAdress,
-        alias,
-        totalLiquidity,
-        totalRewardsEarned,
-        netGain,
-        netPosition,
-        cap,
-      } = member; // TODO find sequelize serializer
-
-      const updatedMember = await prisma.apiMember.update({
-        where: { id },
+    const apiMember = await prisma.apiMember.findUnique({
+      where: { ethAddress },
+    });
+    if (txMember && apiMember && !apiMember.claimed) {
+      const updatedApiMember = await prisma.apiMember.update({
+        where: { id: apiMember.id },
         data: { claimed: true }
       });
 
-      if (updatedMember && !updatedMember.claimed) {
-        res.status(500).send({
-          result: {
-            error: true,
-            errorCode: INTERNAL_ERROR,
-          },
-        });
-        return; // update failed
-      }
+      const updatedTxMember = await prisma.txMember.update({
+        where: { ethAddress: txMember.ethAddress },
+        data: { alias }
+      })
 
-      if (updatedMember && updatedMember.claimed) {
-        res.send({
-          result: {
-            apiMember: {
-              ethAdress,
-              alias,
-              totalLiquidity,
-              totalRewardsEarned,
-              netGain,
-              netPosition,
-              claimed: true,
-              cap,
-            },
-            error: false, // TODO use wrapper to return every response so we can standardize
-          },
-        });
-        return;
-      }
+      res.send({
+        result: {
+          apiMember: updatedApiMember,
+          txMember: updatedTxMember,
+          error: false, // @todo use wrapper to return every response so we can standardize
+        },
+      });
+      return;
     }
     res.send({
       result: {
         error: true,
-        errorCode: ALREADY_CLAIMED, // better validation that this already exists
+        errorCode: ALREADY_CLAIMED,
       },
     });
     return;
   } catch (err) {
+    console.log('/api/profile/claim', err);
     res.status(400).send({
       result: {
         error: true,
@@ -123,6 +90,7 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
 });
 
 router.put('/api/profile/image', async (req, res) => {
+  //@todo this endpoint needs to save s3 url to db too
   try {
     const { image } = req.body;
     const url = await uploadToS3(image);
@@ -143,16 +111,16 @@ router.put('/api/profile/image', async (req, res) => {
   }
 });
 
-router.put('/api/profile/alias', async (req, res) => {
+router.put('/api/profile/alias', authMiddleware, async (req, res) => {
   try {
     const { alias, ethAddress } = req.body;
 
-    // await ApiMember.update({ alias }, {
-    //   where: { ethAddress },
-    // });
-    // @todo convert to prisma
+    const updatedApiMember = await ApiMember.update({
+      where: { ethAddress },
+      data: { alias }
+    });
 
-    res.send({ result: { success: true, error: false } });
+    res.send({ result: { apiMember: updatedApiMember, error: false } });
   } catch (err) {
     res.status(400).send({
       result: {
