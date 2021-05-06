@@ -9,20 +9,37 @@ const { authMiddleware } = require('../../utils/auth');
 router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
   try {
     const {
+      ethAddress,
       allocations,
     } = req.body;
 
     console.log(allocations);
 
-    const valueAllocations = await prisma.txValueAllocation.createMany({
+    // Add epoch to each allocation
+    const epoch = await getCurrentEpoch();
+
+    for (let allocation of allocations) {
+      allocation.epoch = epoch;
+    }
+
+    console.log(ethAddress, epoch)
+
+    // Delete all existing allocations
+    await prisma.txValueAllocation.deleteMany({
+      where: {
+        fromEthAddress: ethAddress,
+        epoch
+      },
+    });
+
+    // Add new allocations
+    await prisma.txValueAllocation.createMany({
       data: allocations,
     });
-    console.log(valueAllocations);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log(err);
-
+    console.log(err)
     res.status(400).send({
       result: {
         error: true,
@@ -32,29 +49,49 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/api/txValueAllocation', authMiddleware, async (req, res) => {
+router.get('/api/txValueAllocation', async (req, res) => {
   try {
     const {
-      fromEthAddress,
-      toEthAddress,
-      epoch,
+      ethAddress,
       page,
-    } = req.body;
+    } = req.query;
 
-    const valueAllocations = await prisma.txValueAllocation.findMany({
+    console.log('txValue', ethAddress, page)
+
+    const epoch = await getCurrentEpoch();
+
+    // Allocations to other members from ethAddress
+    const allocationsTo = await prisma.txValueAllocation.findMany({
       where: {
-        fromEthAddress,
-        toEthAddress,
+        fromEthAddress: ethAddress,
         epoch,
+      },
+      include: {
+        toTxMember: true
       },
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(valueAllocations);
+    console.log(allocationsTo);
+
+    // Allocations to ethAddress from other members
+    const allocationsFrom = await prisma.txValueAllocation.findMany({
+      where: {
+        toEthAddress: ethAddress,
+        epoch,
+      },
+      include: {
+        fromTxMember: true
+      },
+      skip: page * PAGINATION_LIMIT,
+      take: PAGINATION_LIMIT,
+    });
+    console.log(allocationsFrom);
 
     res.send({
       result: {
-        valueAllocations,
+        allocationsTo,
+        allocationsFrom,
         error: false,
       },
     });
