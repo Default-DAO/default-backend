@@ -80,15 +80,14 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
 
 router.get('/api/txStakeDelegation', async (req, res) => {
   try {
-    const {
+    let {
       ethAddress,
       page,
+      epoch
     } = req.query;
-
-    console.log('txStake', ethAddress, page)
-
-    const epoch = await getCurrentEpoch();
-
+    page = Number(page)
+    epoch = Number(epoch)
+    
     // Delegations to other members from ethAddress
     const delegationsTo = await prisma.txStakeDelegation.findMany({
       where: {
@@ -101,7 +100,6 @@ router.get('/api/txStakeDelegation', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(delegationsTo);
 
     // Delegations to ethAddress from other members
     const delegationsFrom = await prisma.txStakeDelegation.findMany({
@@ -115,7 +113,6 @@ router.get('/api/txStakeDelegation', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(delegationsFrom);
 
     res.send({
       result: {
@@ -125,6 +122,7 @@ router.get('/api/txStakeDelegation', async (req, res) => {
       },
     });
   } catch (err) {
+    console.log("E: ",err)
     res.status(400).send({
       result: {
         error: true,
