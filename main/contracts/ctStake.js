@@ -38,18 +38,37 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
 router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
   try {
     const {
+      ethAddress,
       delegations,
     } = req.body;
 
     console.log(delegations);
 
-    const stakeDelegations = await prisma.txStakeDelegation.createMany({
+    // Add epoch to each delegation
+    const epoch = await getCurrentEpoch();
+
+    for (let delegation of delegations) {
+      delegation.epoch = epoch;
+    }
+
+    console.log(ethAddress, epoch)
+
+    // Delete all existing delegations
+    await prisma.txStakeDelegation.deleteMany({
+      where: {
+        fromEthAddress: ethAddress,
+        epoch
+      },
+    });
+
+    // Add new delegations
+    await prisma.txStakeDelegation.createMany({
       data: delegations,
     });
-    console.log(stakeDelegations);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
+    console.log(err)
     res.status(400).send({
       result: {
         error: true,
@@ -62,17 +81,18 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
 router.get('/api/txStakeDelegation', async (req, res) => {
   try {
     const {
-      fromEthAddress,
+      ethAddress,
       page,
     } = req.query;
 
-    console.log('txStake', fromEthAddress, page)
+    console.log('txStake', ethAddress, page)
 
     const epoch = await getCurrentEpoch();
 
-    const stakeDelegations = await prisma.txStakeDelegation.findMany({
+    // Delegations to other members from ethAddress
+    const delegationsTo = await prisma.txStakeDelegation.findMany({
       where: {
-        fromEthAddress,
+        fromEthAddress: ethAddress,
         epoch,
       },
       include: {
@@ -81,11 +101,26 @@ router.get('/api/txStakeDelegation', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(stakeDelegations);
+    console.log(delegationsTo);
+
+    // Delegations to ethAddress from other members
+    const delegationsFrom = await prisma.txStakeDelegation.findMany({
+      where: {
+        toEthAddress: ethAddress,
+        epoch,
+      },
+      include: {
+        fromTxMember: true
+      },
+      skip: page * PAGINATION_LIMIT,
+      take: PAGINATION_LIMIT,
+    });
+    console.log(delegationsFrom);
 
     res.send({
       result: {
-        stakeDelegations,
+        delegationsTo,
+        delegationsFrom,
         error: false,
       },
     });

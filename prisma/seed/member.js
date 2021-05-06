@@ -8,7 +8,7 @@ const members = {
   },
   soma: {
     ethAddress: '0x5672b4355c4Fd85c016d22d828f6A3875FdfcD43',
-    alias: 'Soma'
+    alias: 'soma'
   },
   zaz: {
     ethAddress: '0x06A4ABf578D8739Bf15D779daf5D445aeE478e5B',
