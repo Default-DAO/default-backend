@@ -2,23 +2,27 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index')
 
-const { authMiddleware } = require('../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
-router.post('/api/txStakeConfiguration/send', authMiddleware, async (req, res) => {
+router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => {
   try {
     const {
-      configurations,
+      ethAddress,
+      amountDnt,
     } = req.body;
 
-    console.log(configurations);
+    console.log(ethAddress, amountDnt);
 
-    const stakeConfigurations = await prisma.txStakeConfiguration.createMany({
-      data: configurations,
+    const stake = await prisma.txDntToken.create({
+      data: {
+        ethAddress,
+        amountDnt,
+        transactionType: 'STAKE'
+      },
     });
-    console.log(stakeConfigurations);
+    console.log(stake);
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
@@ -31,29 +35,92 @@ router.post('/api/txStakeConfiguration/send', authMiddleware, async (req, res) =
   }
 });
 
-router.get('/api/txStakeConfiguration', authMiddleware, async (req, res) => {
+router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
   try {
     const {
-      fromEthAddress,
-      toEthAddress,
-      epoch,
-      page,
+      ethAddress,
+      delegations,
     } = req.body;
 
-    const stakeConfigurations = await prisma.txStakeConfiguration.findMany({
+    console.log(delegations);
+
+    // Add epoch to each delegation
+    const epoch = await getCurrentEpoch();
+
+    for (let delegation of delegations) {
+      delegation.epoch = epoch;
+    }
+
+    console.log(ethAddress, epoch)
+
+    // Delete all existing delegations
+    await prisma.txStakeDelegation.deleteMany({
       where: {
-        fromEthAddress,
-        toEthAddress,
+        fromEthAddress: ethAddress,
+        epoch
+      },
+    });
+
+    // Add new delegations
+    await prisma.txStakeDelegation.createMany({
+      data: delegations,
+    });
+
+    res.send({ result: { success: true, error: false } });
+  } catch (err) {
+    console.log(err)
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/txStakeDelegation', async (req, res) => {
+  try {
+    const {
+      ethAddress,
+      page,
+    } = req.query;
+
+    console.log('txStake', ethAddress, page)
+
+    const epoch = await getCurrentEpoch();
+
+    // Delegations to other members from ethAddress
+    const delegationsTo = await prisma.txStakeDelegation.findMany({
+      where: {
+        fromEthAddress: ethAddress,
         epoch,
+      },
+      include: {
+        toTxMember: true
       },
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(stakeConfigurations);
+    console.log(delegationsTo);
+
+    // Delegations to ethAddress from other members
+    const delegationsFrom = await prisma.txStakeDelegation.findMany({
+      where: {
+        toEthAddress: ethAddress,
+        epoch,
+      },
+      include: {
+        fromTxMember: true
+      },
+      skip: page * PAGINATION_LIMIT,
+      take: PAGINATION_LIMIT,
+    });
+    console.log(delegationsFrom);
 
     res.send({
       result: {
-        stakeConfigurations,
+        delegationsTo,
+        delegationsFrom,
         error: false,
       },
     });

@@ -2,16 +2,15 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { prisma } = require('../../prisma/index')
 
-const { authMiddleware } = require('../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
 router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
     const {
       page,
-    } = req.body;
+    } = req.query;
 
     const members = await prisma.txMember.findMany({
       skip: page * PAGINATION_LIMIT,
@@ -35,7 +34,7 @@ router.get('/api/ctMember/getMember', async (req, res) => {
     const {
       ethAddress,
       alias,
-    } = req.body;
+    } = req.query;
 
     const member = await prisma.txMember.findUnique({
       where: {
@@ -56,13 +55,4 @@ router.get('/api/ctMember/getMember', async (req, res) => {
   }
 }),
 
-router.post('/api/ctMember/registerNewMember', async (req, res) => {
-  try {
-  //STEP0. CHECK WHITELIST DB FOR ETH ADDRESS
-
-  //STEP1. REGISTER MEMBER
-
-  } catch (err) {
-    res.status(400).send(err);
-  }
-});
+module.exports = router;

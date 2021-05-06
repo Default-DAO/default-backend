@@ -4,9 +4,10 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const authentication = require('./main/auth');
-const profile = require('./main/profile');
+const apiMember = require('./main/member');
+const ctMember = require('./main/contracts/ctMembers');
 const value = require('./main/contracts/ctValue');
-const network = require('./main/contracts/ctNetwork');
+const protocol = require('./main/contracts/ctProtocol');
 const pools = require('./main/contracts/ctPools');
 const stake = require('./main/contracts/ctStake');
 
@@ -23,9 +24,10 @@ app.options('*', cors());
 app.use(bodyParser.json());
 
 app.use(authentication);
-app.use(profile);
+app.use(apiMember);
+app.use(ctMember);
 app.use(value);
-app.use(network);
+app.use(protocol);
 app.use(pools);
 app.use(stake);
 

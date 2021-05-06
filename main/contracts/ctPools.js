@@ -1,6 +1,10 @@
 const router = require('express').Router();
+const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
+const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { BAD_REQUEST } = require('../../config/keys');
+const { prisma } = require('../../prisma/index')
+
+const { authMiddleware } = require('../../utils/auth');
 
 router.post('/api/ctPools/addLiquidity', async (req, res) => {
   try {
@@ -116,7 +120,7 @@ router.get('/api/ctPools/getPoolShares', async (req, res) => {
     const {
       ethAddress,
       pool,
-    } = req.body;
+    } = req.query;
 
     // STEP0. AGGREGATE txDntToken. GET TOTAL AMOUNT AND AMOUNT THAT BELONGS TO ethAddress
 

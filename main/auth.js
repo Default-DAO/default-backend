@@ -35,6 +35,7 @@ router.get('/api/auth', async (req, res) => {
     });
     return;
   } catch (err) {
+    console.log(err);
     res.status(400).send({
       result: {
         error: true,
