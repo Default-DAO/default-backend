@@ -17,11 +17,9 @@ async function main() {
   await protocol()
 }
 
-main()
-  .catch(e => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+main().then(() => {
+  process.exit()
+}).catch(e => {
+  console.error(e)
+  process.exit(1)
+})

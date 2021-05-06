@@ -8,7 +8,7 @@ const { authMiddleware } = require('../utils/auth');
 const { prisma } = require('../prisma/index');
 
 
-router.get('/api/profile', async (req, res) => {
+router.get('/api/member', async (req, res) => {
   try {
     const { ethAddress } = req.query;
     const txMember = await prisma.txMember.findUnique({
@@ -39,7 +39,7 @@ router.get('/api/profile', async (req, res) => {
   }
 });
 
-router.post('/api/profile/claim', authMiddleware, async (req, res) => {
+router.post('/api/member/claim', authMiddleware, async (req, res) => {
   // @todo need to catch exceptions better and provide better error messages:
   // what happens when a user submits an alias that is too long? we should
   // provide a better error message.
@@ -79,7 +79,7 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
     });
     return;
   } catch (err) {
-    console.log('/api/profile/claim', err);
+    console.log('/api/member/claim', err);
     res.status(400).send({
       result: {
         error: true,
@@ -89,7 +89,7 @@ router.post('/api/profile/claim', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/api/profile/image', async (req, res) => {
+router.put('/api/member/image', async (req, res) => {
   //@todo this endpoint needs to save s3 url to db too
   try {
     const { image } = req.body;
@@ -111,7 +111,7 @@ router.put('/api/profile/image', async (req, res) => {
   }
 });
 
-router.put('/api/profile/alias', authMiddleware, async (req, res) => {
+router.put('/api/member/alias', authMiddleware, async (req, res) => {
   try {
     const { alias, ethAddress } = req.body;
 
