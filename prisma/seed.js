@@ -1,6 +1,5 @@
 
-// prisma seed ./seed.js
-// prisma seed --reset --env-file .env ./seed.js
+// prisma db seed --preview-feature
 // https://gist.github.com/ibraheem4/ce5ccd3e4d7a65589ce84f2a3b7c23a3
 
 const { PrismaClient } = require('@prisma/client')

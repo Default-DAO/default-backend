@@ -12,9 +12,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
       ethAddress,
       amountDnt,
     } = req.body;
-
-    console.log(ethAddress, amountDnt);
-
+    
     // Add epoch to each delegation
     const createdEpoch = await getCurrentEpoch();
 
