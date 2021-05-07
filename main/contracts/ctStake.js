@@ -15,10 +15,14 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
 
     console.log(ethAddress, amountDnt);
 
+    // Add epoch to each delegation
+    const createdEpoch = await getCurrentEpoch();
+
     const stake = await prisma.txDntToken.create({
       data: {
         ethAddress,
         amountDnt,
+        createdEpoch,
         transactionType: 'STAKE'
       },
     });
@@ -26,6 +30,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
+    console.log("E: ", err)
     res.status(400).send({
       result: {
         error: true,
