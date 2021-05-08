@@ -4,9 +4,7 @@ const uuid = require('uuid');
 
 const { INVALID_SIGNATURE } = require('../config/keys');
 
-const { PrismaClient, Prisma } = require('@prisma/client')
-
-const prisma = new PrismaClient()
+const prisma = require('../prisma/index');
 
 const isCheckSumAddress = (ethAddress) => ethUtil.toChecksumAddress(ethAddress) === ethAddress;
 
