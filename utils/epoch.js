@@ -1,4 +1,4 @@
-const genesisEpochDate = new Date('April 12, 2021 12:00:00')
+const genesisEpochDate = new Date('April 19, 2021 12:00:00')
 
 const { prisma } = require('../prisma/index')
 
@@ -12,6 +12,8 @@ async function getCurrentEpoch() {
         epochNumber: true
       }
     });
+
+    console.log('epoch', epochNumber)
 
     return epochNumber;
   } catch (err) {
