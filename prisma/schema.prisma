@@ -74,10 +74,13 @@ model TxProtocol {
   dntWithdrawFee               Float    @map("dnt_withdraw_fee")
   usdcWithdrawFee              Float    @map("usdc_withdraw_fee")
   dntEpochRewardIssuanceAmount Int      @map("dnt_epoch_reward_issuance_amount")
-  dntRewardDistributions       Json     @map("dnt_reward_distributions")
+  dntRewardDistributions       Json?    @map("dnt_reward_distributions")
   createdAt                    DateTime @default(now()) @map("created_at")
   updatedAt                    DateTime @updatedAt @map("updated_at")
 
+
+  // dntRewardDistributions will be populated at the end of the epoch
+  // and will contain the results of the epoch allocations.
   @@map("tx_protocol")
 }
 

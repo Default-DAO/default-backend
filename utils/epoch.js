@@ -35,7 +35,7 @@ function isMonday() {
   return today.getDay() === 1
 }
 
-const incrementEpoch = async () => {
+async function incrementEpoch() {
   try {
     // STEP0. GET PROTOCOL STATE FROM txProtocol AND GET EPOCH ISSUEANCE
 
@@ -46,7 +46,7 @@ const incrementEpoch = async () => {
     } = await prisma.txProtocol.findFirst({
       orderBy: {
         updatedAt: "desc"
-      }
+      },
     });
 
     /* 2. Calculate contributor rewards */
