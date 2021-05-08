@@ -3,6 +3,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
+const { rateLimiter } = require('./utils/rateLimiter');
+
+const main = require('./main/index');
 const authentication = require('./main/auth');
 const apiMember = require('./main/member');
 const ctMember = require('./main/contracts/ctMembers');
@@ -22,7 +25,9 @@ const app = express();
 app.use(cors());
 app.options('*', cors());
 app.use(bodyParser.json());
+app.use(rateLimiter);
 
+app.use(main);
 app.use(authentication);
 app.use(apiMember);
 app.use(ctMember);
