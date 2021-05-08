@@ -1,3 +1,5 @@
+// pg_ctl -D /usr/local/var/postgres start
+
 const { PrismaClient } = require('@prisma/client');
 
 // PrismaClient is attached to the `global` object in development to prevent

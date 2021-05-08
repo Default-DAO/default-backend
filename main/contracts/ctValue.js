@@ -51,14 +51,13 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
 
 router.get('/api/txValueAllocation', async (req, res) => {
   try {
-    const {
+    let {
       ethAddress,
       page,
+      epoch
     } = req.query;
-
-    console.log('txValue', ethAddress, page)
-
-    const epoch = await getCurrentEpoch();
+    page = Number(page)
+    epoch = Number(epoch)
 
     // Allocations to other members from ethAddress
     const allocationsTo = await prisma.txValueAllocation.findMany({
@@ -72,7 +71,6 @@ router.get('/api/txValueAllocation', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(allocationsTo);
 
     // Allocations to ethAddress from other members
     const allocationsFrom = await prisma.txValueAllocation.findMany({
@@ -86,7 +84,6 @@ router.get('/api/txValueAllocation', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(allocationsFrom);
 
     res.send({
       result: {

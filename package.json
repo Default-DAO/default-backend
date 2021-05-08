@@ -8,7 +8,7 @@
     "prod": "pm2-runtime start ecosystem.config.js --env production",
     "preprod": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
     "postprod": "node ./node_modules/pm2/bin/pm2 logs",
-    "stop": "./node_modules/pm2/bin/pm2 stop default-api",
+    "stop": "./node_modules/pm2/bin/pm2 stop all",
     "migrate": "npx prisma migrate deploy",
     "debug": "NODE_ENV=development node inspect index.js",
     "prestart": "npx prisma generate",

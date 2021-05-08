@@ -6,7 +6,7 @@ async function protocol() {
     where: { epochNumber: 1 },
     update: {},
     create: {
-      epochNumber: 1,
+      epochNumber: 3,
       dntWithdrawFee: 1,
       usdcWithdrawFee: 1,
       dntEpochRewardIssuanceAmount: 1000000,
