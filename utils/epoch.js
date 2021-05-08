@@ -2,29 +2,23 @@ const genesisEpochDate = new Date('April 19, 2021 12:00:00')
 
 const { prisma } = require('../prisma/index')
 
-// async function getCurrentEpoch() {
-//   try {
-//     const { epochNumber } = await prisma.txProtocol.findFirst({
-//       orderBy: {
-//         updatedAt: "desc"
-//       },
-//       select: {
-//         epochNumber: true
-//       }
-//     });
+async function getCurrentEpoch() {
+  try {
+    const { epochNumber } = await prisma.txProtocol.findFirst({
+      orderBy: {
+        updatedAt: "desc"
+      },
+      select: {
+        epochNumber: true
+      }
+    });
 
-//     console.log('epoch', epochNumber)
+    console.log('epoch', epochNumber)
 
-//     return epochNumber;
-//   } catch (err) {
-//     throw err;
-//   }
-// }
-
-function getCurrentEpoch() {
-  const today = new Date()
-  let difference = (today.getTime() - genesisEpochDate.getTime()) / (1000 * 3600 * 24)
-  return Math.ceil(difference / 7)
+    return epochNumber;
+  } catch (err) {
+    throw err;
+  }
 }
 
 function getCurrentCycle() {
