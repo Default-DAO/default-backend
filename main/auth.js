@@ -2,12 +2,7 @@ const router = require('express').Router();
 
 const { NOT_WHITELISTED, BAD_REQUEST } = require('../config/keys');
 const { authMsg } = require('../utils/auth');
-const { rateLimiter } = require('../utils/rateLimiter');
 const { prisma } = require('../prisma/index');
-
-
-// limit repeated failed requests to login endpoint
-router.use('/api/auth', rateLimiter);
 
 router.get('/api/auth', async (req, res) => {
   try {
