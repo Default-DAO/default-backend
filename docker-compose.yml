@@ -1,0 +1,23 @@
+# used in jenkins build or for running locally against postgres db
+version: '3.5'
+services:
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=default_db
+      - POSTGRES_USER=default_db_user
+      - POSTGRES_PASSWORD=default_db_password
+    ports:
+      - 5432:5432
+  api:
+    build:
+      context: .
+    environment:
+      - DATABASE_URL=postgresql://default_db_user:default_db_password@db:5432/default_db?schema=public
+    entrypoint:     
+      - bash
+      - -c  # sleep 10 seconds to wait for db initialization
+      - "sleep 10
+         && npm install && npm run migrate && npm run containertest"
+    depends_on:
+      - db
