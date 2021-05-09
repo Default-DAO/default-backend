@@ -33,7 +33,6 @@ model TxMember {
   alias             String?    @db.VarChar(42) @map("alias")
   createdEpoch      Int        @map("created_epoch")
   liquidityCapUsdc  Int?       @map("liquidity_cap_usdc")
-  liquidityCapEpoch Int?       @map("liquidity_cap_epoch")
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
 
@@ -56,7 +55,7 @@ model TxDntToken {
   ethAddress      String             @db.VarChar(42) @map("eth_address")
   createdEpoch    Int                @map("created_epoch")
   transactionType DntTransactionType @map("transaction_type")
-  amountDnt       Float              @map("amount_dnt")
+  amount          Float              @map("amount")
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 

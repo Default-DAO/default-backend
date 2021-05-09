@@ -27,14 +27,14 @@ app.options('*', cors());
 app.use(bodyParser.json());
 app.use(rateLimiter);
 
-app.use(main);
-app.use(authentication);
-app.use(apiMember);
-app.use(ctMember);
-app.use(value);
-app.use(protocol);
-app.use(pools);
-app.use(stake);
+app.use(main.router);
+app.use(authentication.router);
+app.use(apiMember.router);
+app.use(ctMember.router);
+app.use(value.router);
+app.use(protocol.router);
+app.use(pools.router);
+app.use(stake.router);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console

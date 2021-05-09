@@ -7,13 +7,18 @@ const prisma = new PrismaClient()
 
 const { apiMember, txMember } = require('./seed/member')
 const { allocateValue } = require('./seed/value')
+const { delegateStake } = require('./seed/stake')
 const { protocol } = require('./seed/protocol')
+const { transactDnt,transactUsdc } = require('./seed/tokens')
 
 async function main() {
+  await protocol()
   await txMember()
   await apiMember()
+  await transactDnt()
+  await transactUsdc()
   await allocateValue()
-  await protocol()
+  await delegateStake()
 }
 
 main().then(() => {
