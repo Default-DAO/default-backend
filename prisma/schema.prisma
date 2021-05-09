@@ -11,10 +11,10 @@ datasource db {
 model ApiMember {
   id                 Int      @id @default(autoincrement()) @map("id")
   ethAddress         String   @unique @db.VarChar(42) @map("eth_address")
-  totalLiquidity     Int?     @map("total_liquidity")
-  totalRewardsEarned Int?     @map("total_rewards_earned")
-  netGain            Int?     @map("net_gain")
-  netPosition        Int?     @map("net_position")
+  totalLiquidity     Float?   @map("total_liquidity")
+  totalRewardsEarned Float?   @map("total_rewards_earned")
+  netGain            Float?   @map("net_gain")
+  netPosition        Float?   @map("net_position")
   claimed            Boolean  @default(false) @map("claimed")
   cap                Int?     @map("cap")
   nonce              String   @default(uuid()) @map("nonce")
@@ -56,7 +56,7 @@ model TxDntToken {
   ethAddress      String             @db.VarChar(42) @map("eth_address")
   createdEpoch    Int                @map("created_epoch")
   transactionType DntTransactionType @map("transaction_type")
-  amountDnt       Int                @map("amount_dnt")
+  amountDnt       Float              @map("amount_dnt")
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
@@ -71,8 +71,8 @@ model TxDntToken {
 
 model TxProtocol {
   epochNumber                  Int      @id @map("epoch_number")
-  dntWithdrawFee               Float    @map("dnt_withdraw_fee")
-  usdcWithdrawFee              Float    @map("usdc_withdraw_fee")
+  dntWithdrawFee               Int      @map("dnt_withdraw_fee")
+  usdcWithdrawFee              Int      @map("usdc_withdraw_fee")
   dntEpochRewardIssuanceAmount Int      @map("dnt_epoch_reward_issuance_amount")
   dntRewardDistributions       Json?    @map("dnt_reward_distributions")
   createdAt                    DateTime @default(now()) @map("created_at")
@@ -110,7 +110,7 @@ model TxUsdcToken {
   ethAddress      String              @db.VarChar(42) @map("eth_address")
   createdEpoch    Int                 @map("created_epoch")
   transactionType UsdcTransactionType @map("transaction_type")
-  amount          Int                 @map("amount")
+  amount          Float               @map("amount")
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
