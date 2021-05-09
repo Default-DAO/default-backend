@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "docker-compose build --no-cache && docker-compose up --abort-on-container-exit --force-recreate",
+    "containertest": "jest -i",
     "prod": "pm2-runtime start ecosystem.config.js --env production",
     "preprod": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
     "postprod": "node ./node_modules/pm2/bin/pm2 logs",
@@ -27,6 +28,7 @@
     "ethereumjs-util": "^5.2.1",
     "express": "^4.17.1",
     "express-rate-limit": "^5.2.6",
+    "lodash": "^4.17.21",
     "pg": "^8.6.0",
     "pg-hstore": "^2.3.3",
     "pm2": "^4.5.6",
@@ -38,6 +40,7 @@
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prismatik": "^2.2.0",
     "eslint-plugin-import": "^2.22.1",
+    "jest": "^26.6.3",
     "prisma": "^2.21.2"
   }
 }

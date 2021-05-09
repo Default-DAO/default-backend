@@ -8,7 +8,7 @@ const { PrismaClient } = require('@prisma/client');
 
 let prisma;
 
-const options = { log: ['query', 'info', `warn`, `error`], };
+const options = { log: [`warn`, `error`], };
 
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient(options)
