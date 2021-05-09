@@ -1,10 +1,10 @@
 # Default backend
 
-Right now locally it's running on SQLite.
 Create an .env file in the top level project directory and set:
 * SECRET=anythingyouwantfornow
 * PORT=8000
 * NODE_ENV=development
+* DATABASE_URL=postgresql://{user}:{password}@localhost:5432/default_db?schema=public
 
 
 To get it running:
@@ -15,7 +15,33 @@ npx prisma generate
 npm run start
 ```
 
-You'll need to manually add users to the DB first. Here's a template:
+Unit tests are run in docker-compose. 
+
+To be able to run the unit tests download docker desktop from here:
+https://www.docker.com/products/docker-desktop
+
+Then install docker-compose:
+```bash
+brew install docker-compose
+```
+
+Then run:
+```bash
+npm run test
+```
+
+
+You can also run unit tests against your local database but this will clear all data
+from your local db.
+
+Heres the command to run unit tests outside of docker. Warning it will delete everything in
+your databse (hence docker):
+```bash
+npm run containertests
+```
+
+
+You'll need to manually add users to the DB first to test endpoints. Here's a template:
 ```javascript
 const { PrismaClient, Prisma } = require('@prisma/client');
 const prisma = new PrismaClient();
