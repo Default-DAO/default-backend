@@ -66,18 +66,6 @@ async function incrementEpoch() {
   const lpIssuanceDntAmt =
     currentProtocol.dntEpochRewardIssuanceAmount - contributorIssuanceDntAmt;
 
-  // construct network ownership map. The totalOwnershipPercent
-  // will be used to calculate TRUST delegated to a user. TRUST will be
-  // represented by a percentage (percentage of total trust delegated this epoch)
-  let netOwnershipMap = {};
-  for (const { ethAddress, sum } of dntStakes) {
-    // netOwnershipMap[ethAddress] = sum.amountDnt / totalDntStaked.sum.amount;
-    netOwnershipMap[ethAddress] = {
-      'totalStakedDnt': sum.amountDnt,
-      'totalOwnershipPercent': sum.amountDnt / totalDntStaked.sum.amount,
-    };
-  }
-
   // construct a total weight map for delegations
   let delegationWeightMap = {};
   const totalDelWeights = await prisma.txStakeDelegation.groupBy({
@@ -128,9 +116,20 @@ async function incrementEpoch() {
     }
   });
 
+  // construct network ownership map. The totalOwnershipPercent
+  // will be used to calculate TRUST delegated to a user. TRUST will be
+  // represented by a percentage (percentage of total trust delegated this epoch)
+  let netOwnershipMap = {};
+  for (const { ethAddress, sum } of dntStakes) {
+    netOwnershipMap[ethAddress] = {
+      'totalStakedDnt': sum.amountDnt,
+      'totalOwnershipPercent': sum.amountDnt / totalDntStaked.sum.amount,
+    };
+  }
+
   // STEP2. CALCULATE REWARDS DISTRIBUTION AND DIVIDE UP epochIssuance
 
-  // populate raw dnt values into delegation map 
+  // populate raw dnt values into dntRewardDistributions 
   const delegations = await prisma.txStakeDelegation.findMany({
     where: { epoch: currentProtocol.epochNumber },
   });
@@ -146,17 +145,19 @@ async function incrementEpoch() {
     // percentage of total weight fromEthAddress delegated to toEthAddress
     const percentageDelegated = weight / delegationWeightMap[fromEthAddress];
 
-    // (fromEthAddress's percentage ownership of dnt) 
-    // * (fromEthAddress's percentage of personal ownership delegated to toEthAddress) 
-    // * (total new dnt minted) = totalDntDelegated
+    // percentage of fromEthAddress's total staked dnt that was delegated
+    // to toEthAddress
     const totalDntDelegated =
       netOwnershipMap[fromEthAddress].totalStakedDnt * percentageDelegated;
 
-    dntRewardDistributions[fromEthAddress]
-      .delegations[toEthAddress] = totalDntDelegated;
+    // populate the dntRewardDistributions obj
+    dntRewardDistributions[fromEthAddress].delegations[toEthAddress]
+      = totalDntDelegated;
 
+    // add the raw dnt value to trust map. this tracks total dnt delegated 
+    // to user.
     trustMap[toEthAddress] =
-      (trustMap[toEthAddress] || 0) + totalDntDelegated
+      (trustMap[toEthAddress] || 0) + totalDntDelegated;
   }
 
 
@@ -167,21 +168,26 @@ async function incrementEpoch() {
 
   for (const { fromEthAddress, toEthAddress, weight } of allocations) {
     if (!dntRewardDistributions[fromEthAddress]) {
-      dntRewardDistributions[fromEthAddress] =
-        Object.assign({}, dntRewardDistributionObj);
+      dntRewardDistributions[fromEthAddress] = _.cloneDeep(
+        dntRewardDistributionObj
+      );
     }
 
     // percentage of total weight fromEthAddress allocated to toEthAddress
     const percentageAllocated = weight / allocationWeightMap[fromEthAddress];
 
+    // (percentage total ownership fromEthAddress has of all staked dnt)
+    // * (percentage allocated of staked dnt from fromEthAddress to toEthAddress)
+    // * (newly minted DNT available for contributor rewards)
     const totalDntAllocated =
       (trustMap[fromEthAddress] / totalDntStaked.sum.amountDnt)
       * percentageAllocated
       * contributorIssuanceDntAmt;
 
-    dntRewardDistributions[fromEthAddress]
-      .allocations[toEthAddress] = totalDntAllocated;
+    dntRewardDistributions[fromEthAddress].allocations[toEthAddress]
+      = totalDntAllocated;
 
+    // add up all allocations to toEthAddress for creation of txDntTokens later
     tokenDistributions[toEthAddress] = (tokenDistributions[toEthAddress] || 0)
       + totalDntAllocated;
   }
@@ -254,7 +260,8 @@ async function incrementEpoch() {
     data: contributorRewards,
   });
 
-  //save dntRewardDistributions JSON obj to db
+  // save dntRewardDistributions JSON obj to db. This is the recipet for all 
+  // allocations and delegations that occured during this epoch.
   await prisma.txProtocol.update({
     where: {
       epochNumber: currentProtocol.epochNumber,
