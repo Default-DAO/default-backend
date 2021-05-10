@@ -35,6 +35,7 @@ router.get('/api/member', async (req, res) => {
     });
     return;
   } catch (err) {
+    console.log("Failed get /api/member: ", err)
     res.status(400).send(err);
   }
 });
@@ -79,7 +80,7 @@ router.post('/api/member/claim', authMiddleware, async (req, res) => {
     });
     return;
   } catch (err) {
-    console.log('/api/member/claim', err);
+    console.log("Failed /api/member/claim: ", err)
     res.status(400).send({
       result: {
         error: true,
@@ -131,4 +132,4 @@ router.put('/api/member/alias', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = {router};

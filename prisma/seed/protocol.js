@@ -3,7 +3,7 @@ const prisma = new PrismaClient()
 
 async function protocol() {
   await prisma.txProtocol.upsert({
-    where: { epochNumber: 1 },
+    where: { epochNumber: 3 },
     update: {},
     create: {
       epochNumber: 3,

@@ -1,4 +1,6 @@
 // pg_ctl -D /usr/local/var/postgres start
+// npx prisma generate
+// npx prisma migrate dev
 
 const { PrismaClient } = require('@prisma/client');
 

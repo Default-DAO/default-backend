@@ -16,7 +16,6 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(members);
 
     res.send({
       result: {
@@ -42,7 +41,6 @@ router.get('/api/ctMember/getMember', async (req, res) => {
         alias,
       },
     });
-    console.log(member);
 
     res.send({
       result: {
@@ -55,4 +53,4 @@ router.get('/api/ctMember/getMember', async (req, res) => {
   }
 }),
 
-module.exports = router;
+module.exports = {router};
