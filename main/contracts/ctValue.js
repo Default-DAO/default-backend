@@ -57,7 +57,7 @@ async function getAllocationsFromAmount(toAddress, epoch) {
   let totalAmount = 0
   for (let i = 0; i < allocationsFrom.length; i++) {
     let fromAddress = allocationsFrom[i].fromEthAddress
-    let totalWeight = await prisma.txStakeDelegation.aggregate({
+    let totalWeight = await prisma.txValueAllocation.aggregate({
       where: {
         fromEthAddress: fromAddress,
         epoch,

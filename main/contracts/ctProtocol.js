@@ -1,19 +1,15 @@
 const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { getCurrentEpoch } = require('../../utils/epoch');
+const { getCurrentEpoch, getCurrentProtocol } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index');
 
-const { authMiddleware } = require('../../utils/auth');
+const { authMiddleware, getCurrentProtocol } = require('../../utils/auth');
 
 router.get('/api/ctProtocol', async (req, res) => {
   try {
 
-    const protocol = await prisma.txProtocol.findFirst({
-      orderBy: {
-        updatedAt: "desc"
-      }
-    });
+    const protocol = await getCurrentProtocol()
 
     res.send({
       result: {
