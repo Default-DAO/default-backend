@@ -4,7 +4,7 @@ const { getCurrentEpoch, getCurrentProtocol } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index');
 
-const { authMiddleware, getCurrentProtocol } = require('../../utils/auth');
+const { authMiddleware } = require('../../utils/auth');
 
 router.get('/api/ctProtocol', async (req, res) => {
   try {

@@ -22,7 +22,12 @@ express.response.sendError = wrappedError;
 const port = process.env.PORT;
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FE_URL,
+};
+
+
+app.use(cors(corsOptions));
 app.options('*', cors());
 app.use(bodyParser.json());
 app.use(rateLimiter);
