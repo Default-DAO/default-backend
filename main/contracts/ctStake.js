@@ -81,6 +81,13 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
       delegation.epoch = epoch;
     }
 
+    // remove any zero weight delegations or self delegations
+    // These delegations if theyve been added will be deleted
+    // and not recreated
+    const delegationsToWrite = delegations.filter(
+      d => d.weight > 0 && d.toEthAddress !== ethAddress
+    );
+
     // Delete all existing delegations
     await prisma.txStakeDelegation.deleteMany({
       where: {
@@ -91,7 +98,7 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
 
     // Add new delegations
     await prisma.txStakeDelegation.createMany({
-      data: delegations,
+      data: delegationsToWrite,
     });
 
     res.send({ result: { success: true, error: false } });

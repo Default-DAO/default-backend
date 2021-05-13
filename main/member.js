@@ -4,13 +4,13 @@ const {
 } = require('../config/keys');
 
 const { uploadToS3 } = require('../utils/s3');
-const { authMiddleware, checkSumAddress } = require('../utils/auth');
+const { authMiddleware } = require('../utils/auth');
 const { prisma } = require('../prisma/index');
 
 
 router.get('/api/member', async (req, res) => {
   try {
-    const ethAddress = checkSumAddress(req.query.ethAddress);
+    const ethAddress = req.query.ethAddress;
     const txMember = await prisma.txMember.findUnique({
       where: { ethAddress },
     })
