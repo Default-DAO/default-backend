@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { BAD_REQUEST, PAGINATION_LIMIT, OVER_LIMIT } = require('../../config/keys');
+const { BAD_REQUEST, OVER_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index')
@@ -33,7 +33,7 @@ router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
     })
 
     let depositLimit = member.liquidityCapUsdc - epochDeposits.sum.amount - amount
-    
+
     if (depositLimit < 0) {
       res.send({
         result: {

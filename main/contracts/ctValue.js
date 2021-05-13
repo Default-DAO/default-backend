@@ -5,7 +5,7 @@ const { getCurrentEpoch } = require('../../utils/epoch');
 const { prisma } = require('../../prisma/index')
 
 const { authMiddleware } = require('../../utils/auth');
-const {getDelegationsFromAmount} = require('./ctStake')
+const { getDelegationsFromAmount } = require('./ctStake');
 
 router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
   try {
@@ -20,7 +20,13 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
     for (let allocation of allocations) {
       allocation.epoch = epoch;
     }
-    
+
+    // remove any zero weight allocations or self allocations.
+    // All allocations will be deleted in the next DB call
+    const allocationsToWrite = allocations.filter(
+      a => a.weight > 0 && a.toEthAddress !== ethAddress
+    );
+
     // Delete all existing allocations
     await prisma.txValueAllocation.deleteMany({
       where: {
@@ -31,7 +37,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
 
     // Add new allocations
     await prisma.txValueAllocation.createMany({
-      data: allocations,
+      data: allocationsToWrite,
     });
 
     res.send({ result: { success: true, error: false } });
@@ -111,7 +117,7 @@ router.get('/api/txValueAllocation', async (req, res) => {
 
     const allocationsToAmount = await getDelegationsFromAmount(ethAddress, epoch)
 
-    const allocationsFromAmount = await getAllocationsFromAmount(ethAddress, epoch) 
+    const allocationsFromAmount = await getAllocationsFromAmount(ethAddress, epoch)
 
     res.send({
       result: {

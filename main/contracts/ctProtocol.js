@@ -1,10 +1,6 @@
 const router = require('express').Router();
-const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { getCurrentEpoch, getCurrentProtocol } = require('../../utils/epoch');
-
-const { prisma } = require('../../prisma/index');
-
-const { authMiddleware } = require('../../utils/auth');
+const { BAD_REQUEST } = require('../../config/keys');
+const { getCurrentProtocol } = require('../../utils/epoch');
 
 router.get('/api/ctProtocol', async (req, res) => {
   try {
@@ -28,4 +24,4 @@ router.get('/api/ctProtocol', async (req, res) => {
   }
 });
 
-module.exports = {router};
+module.exports = { router };
