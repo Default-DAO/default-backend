@@ -116,7 +116,8 @@ async function getDelegationsFromAmount(toAddress, epoch) {
 
   let totalAmount = 0
   for (let i = 0; i < delegationsFrom.length; i++) {
-    let fromAddress = delegationsFrom[i].fromEthAddress
+    // @todo we should not be making a query in a 
+    // for loop like this. there is a better more efficient way.
     let totalWeight = await prisma.txStakeDelegation.aggregate({
       where: {
         fromEthAddress: fromAddress,
@@ -152,7 +153,7 @@ router.get('/api/txStakeDelegation', async (req, res) => {
     } = req.query;
     page = Number(page)
     epoch = Number(epoch)
-    
+
     // Delegations to other members from ethAddress
     const delegationsTo = await prisma.txStakeDelegation.findMany({
       where: {
@@ -178,7 +179,7 @@ router.get('/api/txStakeDelegation', async (req, res) => {
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log({delegationsTo, delegationsFrom})
+    console.log({ delegationsTo, delegationsFrom })
 
     const delegationsToAmount = await prisma.txDntToken.findFirst({
       where: {
@@ -194,7 +195,7 @@ router.get('/api/txStakeDelegation', async (req, res) => {
 
     res.send({
       result: {
-        delegationsToAmount: delegationsToAmount.amount,
+        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount : 0,
         delegationsFromAmount,
         delegationsTo,
         delegationsFrom,
