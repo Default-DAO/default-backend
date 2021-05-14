@@ -84,7 +84,7 @@ describe('incrementEpoch', () => {
           ethAddress: c.ethAddress,
           createdEpoch: 0,
           transactionType: 'SWAP',
-          amountDnt: 1000,
+          amount: 1000,
         })
       )
     });
@@ -96,7 +96,7 @@ describe('incrementEpoch', () => {
           ethAddress: c.ethAddress,
           createdEpoch: 0,
           transactionType: 'STAKE',
-          amountDnt: 1000,
+          amount: 1000,
         })
       )
     });
@@ -201,14 +201,14 @@ describe('incrementEpoch', () => {
         transactionType: "STAKE",
       },
       sum: {
-        amountDnt: true
+        amount: true
       }
     });
 
     // expected deletegation value === (total staked dnt of delegator) * (percentage delegated to delegatee)
     // in this test case each contributor delegates 100% of their staked tokens to each other.
     // each contributor owns 50% of all staked tokens.
-    const exectedDelegationValue = totalDntStaked.sum.amountDnt / 2;
+    const exectedDelegationValue = totalDntStaked.sum.amount / 2;
 
     // verify delegations are calculated accurately
     expect(
@@ -241,7 +241,7 @@ describe('incrementEpoch', () => {
         createdAt: "desc"
       }
     });
-    expect(contribOneRewards.amountDnt).toBe(expectedContribReward);
+    expect(contribOneRewards.amount).toBe(expectedContribReward);
 
     const contribTwoRewards = await prisma.txDntToken.findFirst({
       where: {
@@ -253,7 +253,7 @@ describe('incrementEpoch', () => {
         createdAt: "desc"
       }
     });
-    expect(contribTwoRewards.amountDnt).toBe(expectedContribReward);
+    expect(contribTwoRewards.amount).toBe(expectedContribReward);
 
     const lpOneRewards = await prisma.txDntToken.findFirst({
       where: {
@@ -265,7 +265,7 @@ describe('incrementEpoch', () => {
         createdAt: "desc"
       }
     });
-    expect(lpOneRewards.amountDnt).toBe(expectedLpReward);
+    expect(lpOneRewards.amount).toBe(expectedLpReward);
 
     const lpTwoRewards = await prisma.txDntToken.findFirst({
       where: {
@@ -277,7 +277,7 @@ describe('incrementEpoch', () => {
         createdAt: "desc"
       }
     });
-    expect(lpTwoRewards.amountDnt).toBe(expectedLpReward);
+    expect(lpTwoRewards.amount).toBe(expectedLpReward);
   });
 });
 

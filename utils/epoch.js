@@ -101,7 +101,7 @@ async function incrementEpoch() {
       transactionType: "STAKE",
     },
     sum: {
-      amountDnt: true
+      amount: true
     }
   });
 
@@ -112,7 +112,7 @@ async function incrementEpoch() {
       transactionType: "STAKE",
     },
     sum: {
-      amountDnt: true
+      amount: true
     }
   });
 
@@ -122,8 +122,8 @@ async function incrementEpoch() {
   let netOwnershipMap = {};
   for (const { ethAddress, sum } of dntStakes) {
     netOwnershipMap[ethAddress] = {
-      'totalStakedDnt': sum.amountDnt,
-      'totalOwnershipPercent': sum.amountDnt / totalDntStaked.sum.amount,
+      'totalStakedDnt': sum.amount,
+      'totalOwnershipPercent': sum.amount / totalDntStaked.sum.amount,
     };
   }
 
@@ -180,7 +180,7 @@ async function incrementEpoch() {
     // * (percentage allocated of staked dnt from fromEthAddress to toEthAddress)
     // * (newly minted DNT available for contributor rewards)
     const totalDntAllocated =
-      (trustMap[fromEthAddress] / totalDntStaked.sum.amountDnt)
+      (trustMap[fromEthAddress] / totalDntStaked.sum.amount)
       * percentageAllocated
       * contributorIssuanceDntAmt;
 
@@ -231,7 +231,7 @@ async function incrementEpoch() {
       ethAddress,
       createdEpoch: currentProtocol.epochNumber,
       transactionType: 'LP_REWARD',
-      amountDnt: lpRewardsDnt,
+      amount: lpRewardsDnt,
     });
   }
 
@@ -243,7 +243,7 @@ async function incrementEpoch() {
       ethAddress,
       createdEpoch: currentProtocol.epochNumber,
       transactionType: 'CONTRIBUTOR_REWARD',
-      amountDnt: tokenDistributions[ethAddress]
+      amount: tokenDistributions[ethAddress]
     });
 
   });
