@@ -4,6 +4,8 @@ const NOT_WHITELISTED = 'notWhitelisted';
 const ALREADY_CLAIMED = 'alreadyClaimed';
 const BAD_REQUEST = 'badRequest';
 const INTERNAL_ERROR = 'internalError';
+const ALREADY_OCCURRED = 'alreadyOccurred'
+const OVER_LIMIT = 'overLimit'
 
 const PAGINATION_LIMIT = 200
 
@@ -13,5 +15,7 @@ module.exports = {
   ALREADY_CLAIMED,
   BAD_REQUEST,
   INTERNAL_ERROR,
-  PAGINATION_LIMIT
+  PAGINATION_LIMIT,
+  ALREADY_OCCURRED,
+  OVER_LIMIT
 };

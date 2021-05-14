@@ -15,7 +15,7 @@ const members = {
     alias: 'zaz'
   },
   scottsgc: {
-    ethAddress: '0xd7d9bce78acead3eb9199097C0db6f03a1f3082a',
+    ethAddress: '0xd7d9bce78acead3eb9199097c0db6f03a1f3082a',
     alias: 'scottsgc'
   }
 }

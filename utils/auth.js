@@ -4,7 +4,9 @@ const uuid = require('uuid');
 
 const { INVALID_SIGNATURE } = require('../config/keys');
 
-const prisma = require('../prisma/index');
+const { prisma } = require('../prisma/index');
+
+const checkSumAddress = (ethAddress) => ethUtil.toChecksumAddress(ethAddress);
 
 const isCheckSumAddress = (ethAddress) => ethUtil.toChecksumAddress(ethAddress) === ethAddress;
 
@@ -54,6 +56,7 @@ const isValidSignature = (ethAddress, nonce, chainId, signature) => {
 const authMiddleware = async (req, res, next) => {
   try {
     const { signature, ethAddress, chainId } = req.body || req.query;
+
     const member = await prisma.apiMember.findUnique({
       where: { ethAddress },
     });
@@ -70,11 +73,13 @@ const authMiddleware = async (req, res, next) => {
       return;
     }
   } catch (err) {
+    console.log("Failed authMiddleware: ", err)
     res.status(400).send(err);
   }
 };
 
 module.exports = {
+  checkSumAddress,
   isCheckSumAddress,
   authMsg,
   isValidSignature,

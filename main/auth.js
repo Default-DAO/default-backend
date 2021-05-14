@@ -30,7 +30,7 @@ router.get('/api/auth', async (req, res) => {
     });
     return;
   } catch (err) {
-    console.log(err);
+    console.log('Failed /api/auth: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -40,4 +40,4 @@ router.get('/api/auth', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = {router};

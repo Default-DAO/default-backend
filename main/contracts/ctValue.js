@@ -5,6 +5,7 @@ const { getCurrentEpoch } = require('../../utils/epoch');
 const { prisma } = require('../../prisma/index')
 
 const { authMiddleware } = require('../../utils/auth');
+const { getDelegationsFromAmount } = require('./ctStake');
 
 router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
   try {
@@ -13,8 +14,6 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
       allocations,
     } = req.body;
 
-    console.log(allocations);
-
     // Add epoch to each allocation
     const epoch = await getCurrentEpoch();
 
@@ -22,7 +21,11 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
       allocation.epoch = epoch;
     }
 
-    console.log(ethAddress, epoch)
+    // remove any zero weight allocations or self allocations.
+    // All allocations will be deleted in the next DB call
+    const allocationsToWrite = allocations.filter(
+      a => a.weight > 0 && a.toEthAddress !== ethAddress
+    );
 
     // Delete all existing allocations
     await prisma.txValueAllocation.deleteMany({
@@ -34,7 +37,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
 
     // Add new allocations
     await prisma.txValueAllocation.createMany({
-      data: allocations,
+      data: allocationsToWrite,
     });
 
     res.send({ result: { success: true, error: false } });
@@ -48,6 +51,33 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
     });
   }
 });
+
+async function getAllocationsFromAmount(toAddress, epoch) {
+  const allocationsFrom = await prisma.txValueAllocation.findMany({
+    where: {
+      toEthAddress: toAddress,
+      epoch,
+    }
+  });
+
+  let totalAmount = 0
+  for (let i = 0; i < allocationsFrom.length; i++) {
+    let fromAddress = allocationsFrom[i].fromEthAddress
+    let totalWeight = await prisma.txValueAllocation.aggregate({
+      where: {
+        fromEthAddress: fromAddress,
+        epoch,
+      },
+      sum: {
+        weight: true
+      }
+    })
+    let allocatableAmount = await getDelegationsFromAmount(fromAddress, epoch)
+    totalAmount += allocatableAmount * (allocationsFrom[i].weight / totalWeight.sum.weight)
+  }
+
+  return totalAmount
+}
 
 router.get('/api/txValueAllocation', async (req, res) => {
   try {
@@ -85,14 +115,21 @@ router.get('/api/txValueAllocation', async (req, res) => {
       take: PAGINATION_LIMIT,
     });
 
+    const allocationsToAmount = await getDelegationsFromAmount(ethAddress, epoch)
+
+    const allocationsFromAmount = await getAllocationsFromAmount(ethAddress, epoch)
+
     res.send({
       result: {
+        allocationsToAmount,
+        allocationsFromAmount,
         allocationsTo,
         allocationsFrom,
         error: false,
       },
     });
   } catch (err) {
+    console.log("E: ", err)
     res.status(400).send({
       result: {
         error: true,
@@ -102,4 +139,7 @@ router.get('/api/txValueAllocation', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = {
+  getAllocationsFromAmount,
+  router
+};

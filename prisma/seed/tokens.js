@@ -56,7 +56,7 @@ async function transactDnt() {
   await prisma.txDntToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: getCurrentEpoch(),
+      createdEpoch: 3,
       transactionType: DntTransactionTypes.STAKE,
       amount: 300000, 
     }
@@ -64,7 +64,7 @@ async function transactDnt() {
 }
 
 async function transactUsdc() {
-  await prisma.apiMember.create({
+  await prisma.txUsdcToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
       createdEpoch: 1, 
@@ -73,7 +73,7 @@ async function transactUsdc() {
     }
   })
 
-  await prisma.apiMember.create({
+  await prisma.txUsdcToken.create({
     data: {
       ethAddress: members.soma.ethAddress,
       createdEpoch: 2, 
@@ -82,7 +82,7 @@ async function transactUsdc() {
     }
   })
 
-  await prisma.apiMember.create({
+  await prisma.txUsdcToken.create({
     data: {
       ethAddress: members.fullyallocated.ethAddress,
       createdEpoch: 2, 
@@ -91,17 +91,17 @@ async function transactUsdc() {
     }
   })
 
-  await prisma.apiMember.create({
+  await prisma.txUsdcToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: getCurrentEpoch(), 
+      createdEpoch: 3, 
       transactionType: UsdcTransactionTypes.DEPOSIT,
       amount: 5000, 
     }
   })
   
 
-  await prisma.apiMember.create({
+  await prisma.txUsdcToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
       createdEpoch: 2, 
@@ -110,10 +110,10 @@ async function transactUsdc() {
     }
   })
 
-  await prisma.apiMember.create({
+  await prisma.txUsdcToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: getCurrentEpoch(),
+      createdEpoch: 3,
       transactionType: UsdcTransactionTypes.WITHDRAW,
       amount: 5000, 
     }

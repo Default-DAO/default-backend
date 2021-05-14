@@ -1,22 +1,26 @@
 const router = require('express').Router();
-const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
-const { getCurrentEpoch } = require('../../utils/epoch');
+const { PAGINATION_LIMIT } = require('../../config/keys');
 
 const { prisma } = require('../../prisma/index')
-
-const { authMiddleware } = require('../../utils/auth');
 
 router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
     const {
       page,
+      excludeEthAddress,
     } = req.query;
 
+    // get all claimed members that are not excludeEthAddress. 
+    // if excludeEthAddress is null this will just return all 
+    // claimed members
     const members = await prisma.txMember.findMany({
+      where: {
+        ethAddress: {not: excludeEthAddress},
+        apiMember: { claimed: true},
+      },
       skip: page * PAGINATION_LIMIT,
       take: PAGINATION_LIMIT,
     });
-    console.log(members);
 
     res.send({
       result: {
@@ -42,7 +46,6 @@ router.get('/api/ctMember/getMember', async (req, res) => {
         alias,
       },
     });
-    console.log(member);
 
     res.send({
       result: {
@@ -55,4 +58,4 @@ router.get('/api/ctMember/getMember', async (req, res) => {
   }
 }),
 
-module.exports = router;
+module.exports = {router};
