@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const {
-  NOT_WHITELISTED, ALREADY_CLAIMED, INTERNAL_ERROR, BAD_REQUEST,
+  NOT_WHITELISTED, ALREADY_CLAIMED, BAD_REQUEST,
 } = require('../config/keys');
 
 const { uploadToS3 } = require('../utils/s3');
@@ -10,7 +10,7 @@ const { prisma } = require('../prisma/index');
 
 router.get('/api/member', async (req, res) => {
   try {
-    const { ethAddress } = req.query.ethAddress;
+    const { ethAddress } = req.query;
     const txMember = await prisma.txMember.findUnique({
       where: { ethAddress },
     })
