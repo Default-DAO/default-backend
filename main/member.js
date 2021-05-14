@@ -10,7 +10,7 @@ const { prisma } = require('../prisma/index');
 
 router.get('/api/member', async (req, res) => {
   try {
-    const ethAddress = req.query.ethAddress;
+    const { ethAddress } = req.query.ethAddress;
     const txMember = await prisma.txMember.findUnique({
       where: { ethAddress },
     })
