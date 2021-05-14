@@ -32,7 +32,7 @@ async function uploadToS3(data) {
       });
     });
   } catch (err) {
-    console.log('Failed upload banner to S3: ', err);
+    console.log('Failed upload image to S3: ', err);
   }
 }
 

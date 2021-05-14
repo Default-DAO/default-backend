@@ -68,7 +68,7 @@ router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log("Failed /api/ctPools/addLiquidity: ", err)
+    console.log("Failed POST /api/ctPools/addLiquidity: ", err)
     res.status(400).send({
       result: {
         error: true,
@@ -214,7 +214,7 @@ router.get('/api/ctPools', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log('err pool: ', err)
+    console.log('Failed GET /api/ctPools: ', err)
     res.status(400).send({
       result: {
         error: true,
@@ -301,7 +301,7 @@ router.get('/api/ctPools/member', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log('err: ', err)
+    console.log('Failed GET /api/ctPools/member: ', err)
     res.status(400).send({
       result: {
         error: true,

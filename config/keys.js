@@ -7,7 +7,7 @@ const INTERNAL_ERROR = 'internalError';
 const ALREADY_OCCURRED = 'alreadyOccurred'
 const OVER_LIMIT = 'overLimit'
 
-const PAGINATION_LIMIT = 200
+const PAGINATION_LIMIT = 10
 
 module.exports = {
   INVALID_SIGNATURE,
