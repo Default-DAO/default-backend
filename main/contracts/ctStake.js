@@ -57,7 +57,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log("Failed /api/txStakeDelegation/stake: ", err)
+    console.log("Failed POST /api/txStakeDelegation/stake: ", err)
     res.status(400).send({
       result: {
         error: true,
@@ -103,7 +103,97 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log(err)
+    console.log('Failed POST /api/txStakeDelegation/send: ', err)
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/txStakeDelegation/to', async (req, res) => {
+  try {
+    let {
+      ethAddress,
+      epoch
+    } = req.query;
+    epoch = Number(epoch)
+
+    // Delegations to other members from ethAddress
+    const delegationsTo = await prisma.txStakeDelegation.findMany({
+      where: {
+        fromEthAddress: ethAddress,
+        epoch,
+      },
+      include: {
+        toTxMember: true
+      }
+    });
+
+    const delegationsToAmount = await prisma.txDntToken.findFirst({
+      where: {
+        ethAddress,
+        createdEpoch: epoch
+      },
+      orderBy: {
+        updatedAt: "desc"
+      }
+    });
+
+    res.send({
+      result: {
+        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount : 0,
+        delegationsTo,
+        error: false,
+      },
+    });
+  } catch (err) {
+    console.log("Failed GET /api/txStakeDelegation/to: ", err)
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/txStakeDelegation/from', async (req, res) => {
+  try {
+    let {
+      ethAddress,
+      skip,
+      epoch
+    } = req.query;
+    skip = Number(skip)
+    epoch = Number(epoch)
+
+    // Delegations to ethAddress from other members
+    const delegationsFrom = await prisma.txStakeDelegation.findMany({
+      where: {
+        toEthAddress: ethAddress,
+        epoch,
+      },
+      include: {
+        fromTxMember: true
+      },
+      skip,
+      take: PAGINATION_LIMIT,
+    });
+
+    const delegationsFromAmount = await getDelegationsFromAmount(ethAddress, epoch)
+
+    res.send({
+      result: {
+        delegationsFromAmount,
+        delegationsFrom,
+        error: false,
+      },
+    });
+  } catch (err) {
+    console.log("Failed GET /api/txStakeDelegation/from: ", err)
     res.status(400).send({
       result: {
         error: true,
@@ -123,11 +213,12 @@ async function getDelegationsFromAmount(toAddress, epoch) {
 
   let totalAmount = 0
   for (let i = 0; i < delegationsFrom.length; i++) {
+    let fromEthAddress = delegationsFrom[i].fromEthAddress
     // @todo we should not be making a query in a 
     // for loop like this. there is a better more efficient way.
     let totalWeight = await prisma.txStakeDelegation.aggregate({
       where: {
-        fromEthAddress: fromAddress,
+        fromEthAddress,
         epoch,
       },
       sum: {
@@ -136,7 +227,7 @@ async function getDelegationsFromAmount(toAddress, epoch) {
     })
     let stakeAmount = await prisma.txDntToken.findFirst({
       where: {
-        ethAddress: fromAddress,
+        ethAddress: fromEthAddress,
         createdEpoch: epoch
       },
       orderBy: {
@@ -150,75 +241,6 @@ async function getDelegationsFromAmount(toAddress, epoch) {
 
   return totalAmount
 }
-
-router.get('/api/txStakeDelegation', async (req, res) => {
-  try {
-    let {
-      ethAddress,
-      page,
-      epoch
-    } = req.query;
-    page = Number(page)
-    epoch = Number(epoch)
-
-    // Delegations to other members from ethAddress
-    const delegationsTo = await prisma.txStakeDelegation.findMany({
-      where: {
-        fromEthAddress: ethAddress,
-        epoch,
-      },
-      include: {
-        toTxMember: true
-      },
-      skip: page * PAGINATION_LIMIT,
-      take: PAGINATION_LIMIT,
-    });
-
-    // Delegations to ethAddress from other members
-    const delegationsFrom = await prisma.txStakeDelegation.findMany({
-      where: {
-        toEthAddress: ethAddress,
-        epoch,
-      },
-      include: {
-        fromTxMember: true
-      },
-      skip: page * PAGINATION_LIMIT,
-      take: PAGINATION_LIMIT,
-    });
-    console.log({ delegationsTo, delegationsFrom })
-
-    const delegationsToAmount = await prisma.txDntToken.findFirst({
-      where: {
-        ethAddress,
-        createdEpoch: epoch
-      },
-      orderBy: {
-        updatedAt: "desc"
-      }
-    });
-
-    const delegationsFromAmount = await getDelegationsFromAmount(ethAddress, epoch)
-
-    res.send({
-      result: {
-        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount : 0,
-        delegationsFromAmount,
-        delegationsTo,
-        delegationsFrom,
-        error: false,
-      },
-    });
-  } catch (err) {
-    console.log("Failed /api/txStakeDelegation: ", err)
-    res.status(400).send({
-      result: {
-        error: true,
-        errorCode: BAD_REQUEST,
-      },
-    });
-  }
-});
 
 module.exports = {
   getDelegationsFromAmount,
