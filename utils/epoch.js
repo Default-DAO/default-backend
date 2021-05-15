@@ -1,224 +1,210 @@
-const { prisma } = require('../prisma/index');
 const { _ } = require('lodash');
+const { prisma } = require('../prisma/index');
 
-const genesisEpochDate = new Date('April 19, 2021 12:00:00')
+const genesisEpochDate = new Date('April 19, 2021 12:00:00');
+
+const contribRewardPercent = 0.50;
+const lpRewardPercent = 0.50;
 
 const dntRewardDistributionObj = {
   lpReward: 0,
   delegations: {},
   allocations: {},
-}
+};
 
 async function getCurrentProtocol() {
-  return await prisma.txProtocol.findFirst({
+  return prisma.txProtocol.findFirst({
     orderBy: {
-      epochNumber: "desc"
-    }
+      epochNumber: 'desc',
+    },
   });
 }
 
 async function getCurrentEpoch() {
-  try {
-    const { epochNumber } = await getCurrentProtocol();
-    return epochNumber;
-  } catch (err) {
-    throw err;
-  }
+  const { epochNumber } = await getCurrentProtocol();
+  return epochNumber;
 }
 
 function getCurrentCycle() {
-  const today = new Date()
-  let difference = (today.getTime() - genesisEpochDate.getTime()) / (1000 * 3600 * 24)
-  return Math.ceil(difference / 30)
+  const today = new Date();
+  const difference = (today.getTime() - genesisEpochDate.getTime()) / (1000 * 3600 * 24);
+  return Math.ceil(difference / 30);
 }
 
 function isFriday() {
-  const today = new Date()
-  return today.getDay() === 5
+  const today = new Date();
+  return today.getDay() === 5;
 }
 
 function isMonday() {
-  const today = new Date()
-  return today.getDay() === 1
+  const today = new Date();
+  return today.getDay() === 1;
 }
 
-async function incrementEpoch() {
+async function constructRewardDistributions(epochNumber) {
+  const currentProtocol = await prisma.txProtocol.findUnique({
+    where: { epochNumber },
+  });
 
-  const currentProtocol = await getCurrentProtocol();
-
-  // this object will be saved to the db as a reciept of all the 
+  // this object will be saved to the db as a reciept of all the
   // allocations and delegations that happened this epoch
-  let dntRewardDistributions = {};
+  const dntRewardDistributions = {};
 
   // this object will keep track of total dnt(trust) delegated to an address
   // this will be used to determine allocation power
-  let trustMap = {};
-
-  // this object will keep track of total dnt(clout) allocated to an address
-  // then one batch transaction will be written to the DB.
-  let tokenDistributions = {};
+  const trustMap = {};
 
   // contributors get 50% of new DNT minted
-  const contributorIssuanceDntAmt =
-    currentProtocol.dntEpochRewardIssuanceAmount / 2;
+  const contributorIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount
+   * contribRewardPercent;
 
   // lps get 50% of new DNT minted
-  const lpIssuanceDntAmt =
-    currentProtocol.dntEpochRewardIssuanceAmount - contributorIssuanceDntAmt;
+  const lpIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount
+   * lpRewardPercent;
 
   // construct a total weight map for delegations
-  let delegationWeightMap = {};
+  const delegationWeightMap = {};
   const totalDelWeights = await prisma.txStakeDelegation.groupBy({
     by: ['fromEthAddress'],
     where: { epoch: currentProtocol.epochNumber },
-    sum: {
-      weight: true,
-    }
+    sum: { weight: true },
   });
-  for (const { fromEthAddress, sum } of totalDelWeights) {
+  totalDelWeights.forEach((totalDelWeight) => {
+    const { fromEthAddress, sum } = totalDelWeight;
     delegationWeightMap[fromEthAddress] = sum.weight;
-  }
+  });
 
   // construct a total weight map for allocations
-  let allocationWeightMap = {};
+  const allocationWeightMap = {};
   const totalAllocWeights = await prisma.txValueAllocation.groupBy({
     by: ['fromEthAddress'],
     where: { epoch: currentProtocol.epochNumber },
-    sum: {
-      weight: true,
-    }
-  })
-  for (const { fromEthAddress, sum } of totalAllocWeights) {
+    sum: { weight: true },
+  });
+  totalAllocWeights.forEach((totalAllocWeight) => {
+    const { fromEthAddress, sum } = totalAllocWeight;
     allocationWeightMap[fromEthAddress] = sum.weight;
-  }
+  });
 
+  const allDelegators = Object.keys(delegationWeightMap);
+  const allAllocators = Object.keys(allocationWeightMap);
+  const nonAllocators = allDelegators.filter((x) => !allAllocators.includes(x));
+
+  console.log(`nonAllocators === ${nonAllocators}`);
 
   // STEP1. CALCULATE DNT SHARES OF ALL MEMBERS BY AGGREGATING txDntTokens
 
-  // Get total nominal dnt staked
+  // Get total dnt staked
+  // (minus the staked DNT of those who did not allocate)
   const totalDntStaked = await prisma.txDntToken.aggregate({
-    where: {
-      transactionType: "STAKE",
-    },
-    sum: {
-      amount: true
-    }
+    where: { transactionType: 'STAKE' },
+    sum: { amount: true },
   });
 
   // Get amount of dnt staked by each delegator
   const dntStakes = await prisma.txDntToken.groupBy({
     by: ['ethAddress'],
-    where: {
-      transactionType: "STAKE",
-    },
-    sum: {
-      amount: true
-    }
+    where: { transactionType: 'STAKE' },
+    sum: { amount: true },
   });
 
   // construct network ownership map. The totalOwnershipPercent
   // will be used to calculate TRUST delegated to a user. TRUST will be
   // represented by a percentage (percentage of total trust delegated this epoch)
-  let netOwnershipMap = {};
-  for (const { ethAddress, sum } of dntStakes) {
+  const netOwnershipMap = {};
+  let unallocatedPercentage = 0;
+  dntStakes.forEach((dntStake) => {
+    const { ethAddress, sum } = dntStake;
+    const totalOwnershipPercent = sum.amount / totalDntStaked.sum.amount;
     netOwnershipMap[ethAddress] = {
-      'totalStakedDnt': sum.amount,
-      'totalOwnershipPercent': sum.amount / totalDntStaked.sum.amount,
+      totalStakedDnt: sum.amount,
+      totalOwnershipPercent: sum.amount / totalDntStaked.sum.amount,
     };
-  }
+
+    if (nonAllocators.includes(ethAddress)) {
+      unallocatedPercentage += totalOwnershipPercent;
+    }
+  });
+
+  // unallocated multipler will be used to increase the allocations
+  // all contributors receive in the case that someone delegates but
+  // does not allocate.
+  const unallocatedMultipler = 1 / (1 - unallocatedPercentage);
 
   // STEP2. CALCULATE REWARDS DISTRIBUTION AND DIVIDE UP epochIssuance
 
-  // populate raw dnt values into dntRewardDistributions 
+  // populate raw dnt values into dntRewardDistributions
   const delegations = await prisma.txStakeDelegation.findMany({
     where: { epoch: currentProtocol.epochNumber },
   });
 
-  for (const { fromEthAddress, toEthAddress, weight } of delegations) {
-
+  delegations.forEach((delegation) => {
+    const { fromEthAddress, toEthAddress, weight } = delegation;
     if (!dntRewardDistributions[fromEthAddress]) {
       dntRewardDistributions[fromEthAddress] = _.cloneDeep(
-        dntRewardDistributionObj
+        dntRewardDistributionObj,
       );
     }
-
     // percentage of total weight fromEthAddress delegated to toEthAddress
     const percentageDelegated = weight / delegationWeightMap[fromEthAddress];
 
     // percentage of fromEthAddress's total staked dnt that was delegated
     // to toEthAddress
-    const totalDntDelegated =
-      netOwnershipMap[fromEthAddress].totalStakedDnt * percentageDelegated;
+    const totalDntDelegated = netOwnershipMap[fromEthAddress].totalStakedDnt * percentageDelegated;
+
+    // add the raw dnt value to trust map. this tracks total dnt delegated
+    // to user.
+    trustMap[toEthAddress] = (trustMap[toEthAddress] || 0) + totalDntDelegated;
 
     // populate the dntRewardDistributions obj
-    dntRewardDistributions[fromEthAddress].delegations[toEthAddress]
-      = totalDntDelegated;
-
-    // add the raw dnt value to trust map. this tracks total dnt delegated 
-    // to user.
-    trustMap[toEthAddress] =
-      (trustMap[toEthAddress] || 0) + totalDntDelegated;
-  }
-
+    dntRewardDistributions[fromEthAddress].delegations[toEthAddress] = totalDntDelegated;
+  });
 
   // populate allocations into dntRewardDistributions obj
   const allocations = await prisma.txValueAllocation.findMany({
-    where: { epoch: currentProtocol.epochNumber }
+    where: { epoch: currentProtocol.epochNumber },
   });
 
-  for (const { fromEthAddress, toEthAddress, weight } of allocations) {
+  allocations.forEach((allocation) => {
+    const { fromEthAddress, weight, toEthAddress } = allocation;
     if (!dntRewardDistributions[fromEthAddress]) {
       dntRewardDistributions[fromEthAddress] = _.cloneDeep(
-        dntRewardDistributionObj
+        dntRewardDistributionObj,
       );
     }
 
     // percentage of total weight fromEthAddress allocated to toEthAddress
     const percentageAllocated = weight / allocationWeightMap[fromEthAddress];
 
-    // (percentage total ownership fromEthAddress has of all staked dnt)
+    // (percentage total ownership fromEthAddress has of all delegated dnt)
     // * (percentage allocated of staked dnt from fromEthAddress to toEthAddress)
+    // * (percentage of network that is unallocated + 100%)
     // * (newly minted DNT available for contributor rewards)
-    const totalDntAllocated =
-      (trustMap[fromEthAddress] / totalDntStaked.sum.amount)
+    const totalDntAllocated = (trustMap[fromEthAddress] / totalDntStaked.sum.amount)
       * percentageAllocated
+      * unallocatedMultipler
       * contributorIssuanceDntAmt;
 
-    dntRewardDistributions[fromEthAddress].allocations[toEthAddress]
-      = totalDntAllocated;
-
-    // add up all allocations to toEthAddress for creation of txDntTokens later
-    tokenDistributions[toEthAddress] = (tokenDistributions[toEthAddress] || 0)
-      + totalDntAllocated;
-  }
+    dntRewardDistributions[fromEthAddress].allocations[toEthAddress] = totalDntAllocated;
+  });
 
   // Get total nominal usdc in lp
   const totalUsdc = await prisma.txUsdcToken.aggregate({
-    where: {
-      transactionType: "DEPOSIT",
-    },
-    sum: {
-      amount: true
-    }
+    where: { transactionType: 'DEPOSIT' },
+    sum: { amount: true },
   });
 
   // Get all Lps and the amount they deposited
   const usdcLps = await prisma.txUsdcToken.groupBy({
     by: ['ethAddress'],
-    where: {
-      transactionType: "DEPOSIT",
-    },
-    sum: {
-      amount: true
-    }
+    where: { transactionType: 'DEPOSIT' },
+    sum: { amount: true },
   });
 
-  // STEP 3. LP REWARDS: AGGREGATE SHARES FOR LPS
-  let lpRewards = [];
-  for (const { ethAddress, sum } of usdcLps) {
+  usdcLps.forEach((lp) => {
+    const { ethAddress, sum } = lp;
     if (!dntRewardDistributions[ethAddress]) {
-      dntRewardDistributions[ethAddress] =
-        _.cloneDeep(dntRewardDistributionObj);
+      dntRewardDistributions[ethAddress] = _.cloneDeep(dntRewardDistributionObj);
     }
 
     const percentageOwnership = sum.amount / totalUsdc.sum.amount;
@@ -226,50 +212,61 @@ async function incrementEpoch() {
     const lpRewardsDnt = percentageOwnership * lpIssuanceDntAmt;
 
     dntRewardDistributions[ethAddress].lpReward = lpRewardsDnt;
+  });
 
-    lpRewards.push({
-      ethAddress,
-      createdEpoch: currentProtocol.epochNumber,
-      transactionType: 'LP_REWARD',
-      amount: lpRewardsDnt,
-    });
-  }
+  return dntRewardDistributions;
+}
 
+async function incrementEpoch() {
+  const currentProtocol = await getCurrentProtocol();
+  const dntRewardDistributions = await constructRewardDistributions(
+    currentProtocol.epochNumber,
+  );
+
+  // STEP 3. LP REWARDS: AGGREGATE SHARES FOR LPS
   // STEP 4. CONTRIBUTOR REWARDS: AGGREGATE SHARES FOR CONTRIBUTORS
-  let contributorRewards = [];
-  Object.keys(tokenDistributions).forEach(ethAddress => {
+  const contributorRewards = [];
+  const lpRewards = [];
+  Object.keys(dntRewardDistributions).forEach((ethAddress) => {
+    const { lpReward, allocations } = dntRewardDistributions[ethAddress];
 
-    contributorRewards.push({
-      ethAddress,
-      createdEpoch: currentProtocol.epochNumber,
-      transactionType: 'CONTRIBUTOR_REWARD',
-      amount: tokenDistributions[ethAddress]
-    });
+    if (lpReward) {
+      lpRewards.push({
+        ethAddress,
+        createdEpoch: currentProtocol.epochNumber,
+        transactionType: 'LP_REWARD',
+        amount: lpReward,
+      });
+    }
 
+    if (!_.isEmpty(allocations)) {
+      let totalDntRewarded = 0;
+      Object.keys(allocations).forEach((fromEthAddress) => {
+        totalDntRewarded += allocations[fromEthAddress];
+      });
+      contributorRewards.push({
+        ethAddress,
+        createdEpoch: currentProtocol.epochNumber,
+        transactionType: 'CONTRIBUTOR_REWARD',
+        amount: totalDntRewarded,
+      });
+    }
   });
 
   // STEP 5. SAVE EPOCH ISSUANCES AS REWARDS FOR BOTH CONTRIBUTORS AND LPS TO txDntTokens
 
   // create new LP_REWARD transactions
-  await prisma.txDntToken.createMany({
-    data: lpRewards,
-  });
+  await prisma.txDntToken.createMany({ data: lpRewards });
 
   // create new CONTRIBUTOR_REWARD transaction
-  await prisma.txDntToken.createMany({
-    data: contributorRewards,
-  });
+  await prisma.txDntToken.createMany({ data: contributorRewards });
 
-  // save dntRewardDistributions JSON obj to db. This is the recipet for all 
+  // save dntRewardDistributions JSON obj to db. This is the recipet for all
   // allocations and delegations that occured during this epoch.
   await prisma.txProtocol.update({
-    where: {
-      epochNumber: currentProtocol.epochNumber,
-    },
-    data: {
-      dntRewardDistributions
-    },
-  })
+    where: { epochNumber: currentProtocol.epochNumber },
+    data: { dntRewardDistributions },
+  });
 
   // STEP 6. INCREMENT EPOCH
   await prisma.txProtocol.create({
@@ -278,16 +275,18 @@ async function incrementEpoch() {
       dntWithdrawFee: currentProtocol.dntWithdrawFee,
       usdcWithdrawFee: currentProtocol.usdcWithdrawFee,
       dntEpochRewardIssuanceAmount: currentProtocol.dntEpochRewardIssuanceAmount,
-    }
+    },
   });
-
-};
+}
 
 module.exports = {
+  constructRewardDistributions,
   getCurrentEpoch,
   getCurrentProtocol,
   getCurrentCycle,
   isFriday,
   isMonday,
   incrementEpoch,
-}
+  contribRewardPercent,
+  lpRewardPercent,
+};
