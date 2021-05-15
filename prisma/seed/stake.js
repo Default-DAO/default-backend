@@ -58,8 +58,8 @@ async function delegateStake() {
   // epoch 3
   await stakeDelegate(
     members.scottsgc.ethAddress,
-    [1],
-    [members.fullyallocated.ethAddress],
+    [1, 1],
+    [members.fullyallocated.ethAddress, members.soma.ethAddress],
     3,
   );
 

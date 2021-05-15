@@ -65,6 +65,13 @@ async function allocateValue() {
     [members.scottsgc.ethAddress, members.zaz.ethAddress, members.soma.ethAddress],
     3,
   );
+
+  await valueAllocate(
+    members.soma.ethAddress,
+    [10],
+    [members.fullyallocated.ethAddress],
+    3,
+  );
 }
 
 module.exports = {

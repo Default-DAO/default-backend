@@ -86,12 +86,6 @@ async function constructRewardDistributions(epochNumber) {
     allocationWeightMap[fromEthAddress] = sum.weight;
   });
 
-  const allDelegators = Object.keys(delegationWeightMap);
-  const allAllocators = Object.keys(allocationWeightMap);
-  const nonAllocators = allDelegators.filter((x) => !allAllocators.includes(x));
-
-  console.log(`nonAllocators === ${nonAllocators}`);
-
   // STEP1. CALCULATE DNT SHARES OF ALL MEMBERS BY AGGREGATING txDntTokens
 
   // Get total dnt staked
@@ -120,10 +114,6 @@ async function constructRewardDistributions(epochNumber) {
       totalStakedDnt: sum.amount,
       totalOwnershipPercent,
     };
-
-    // if (nonAllocators.includes(ethAddress)) {
-    //  unallocatedPercentage += totalOwnershipPercent;
-    // }
   });
 
   // unallocated multipler will be used to increase the allocations
@@ -223,13 +213,26 @@ async function incrementEpoch() {
     currentProtocol.epochNumber,
   );
 
+  // calculate unallocatedMultiplier
+  // this will be used to distribute unallocated DNT evenly
+  let totalDntAllocated = 0;
+  Object.keys(dntRewardDistributions).forEach((ethAddress) => {
+    const { allocations } = dntRewardDistributions[ethAddress];
+
+    Object.keys(allocations).forEach((fromEthAddress) => {
+      totalDntAllocated += allocations[fromEthAddress];
+    });
+  });
+  const percentAllocated = totalDntAllocated
+    / (currentProtocol.dntEpochRewardIssuanceAmount * contribRewardPercent);
+  const unallocatedMultipler = (1 / (percentAllocated || 1));
+
   // STEP 3. LP REWARDS: AGGREGATE SHARES FOR LPS
   // STEP 4. CONTRIBUTOR REWARDS: AGGREGATE SHARES FOR CONTRIBUTORS
   const contributorRewards = [];
   const lpRewards = [];
   Object.keys(dntRewardDistributions).forEach((ethAddress) => {
     const { lpReward, allocations } = dntRewardDistributions[ethAddress];
-
     if (lpReward) {
       lpRewards.push({
         ethAddress,
@@ -240,15 +243,23 @@ async function incrementEpoch() {
     }
 
     if (!_.isEmpty(allocations)) {
-      let totalDntRewarded = 0;
+      let totalReward = 0;
       Object.keys(allocations).forEach((fromEthAddress) => {
-        totalDntRewarded += allocations[fromEthAddress];
+        // update dntRewardDistributions with the final value
+        const finalAllocation = allocations[fromEthAddress] * unallocatedMultipler;
+
+        // add the final allocation total to the running total
+        totalReward += finalAllocation;
+
+        // update the dntRewardDistributions object to reflect the final total
+        dntRewardDistributions[ethAddress].allocations[fromEthAddress] = finalAllocation;
       });
+
       contributorRewards.push({
         ethAddress,
         createdEpoch: currentProtocol.epochNumber,
         transactionType: 'CONTRIBUTOR_REWARD',
-        amount: totalDntRewarded,
+        amount: totalReward,
       });
     }
   });
