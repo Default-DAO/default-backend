@@ -147,7 +147,7 @@ describe('constructRewardDistributions', () => {
     return done();
   });
 
-  test('simple dntRewardDistributions object', async () => {
+  test('should create simple dntRewardDistributions object', async () => {
     const { epochNumber } = await getCurrentProtocol();
     const distributions = await constructRewardDistributions(epochNumber);
 
@@ -445,6 +445,41 @@ describe('incrementEpoch', () => {
 
     expect(totalContribTokens.sum.amount).toBe(totalContribDntRewardAmt);
     expect(totalLpRewards.sum.amount).toBe(totalLpDntRewardAmt);
+  });
+
+  test('should have correct allocations', async () => {
+    // test case:
+    // 1. contributor 1 has 9000 staked. contributor 2 has 1000 staked.
+    // 2. contributor 1 delegated 100% and allocated 100% to contributor 2.
+    // 3. contributor 2 delegated 100% and allocated 100% to contributor 1.
+    // 4. contributor 2 now has 90% of the allocating power in the network.
+    //    so since contributor 2 has allocated 100% to contributor 1
+    //    contributor 1 should have 90% of all this epoch's contrib rewards.
+
+    const epochNumber = await getCurrentEpoch();
+
+    await prisma.txDntToken.create({
+      data: {
+        ethAddress: contributorOne,
+        amount: 8000, // total net staked is now 10,000. contribOne has 9,000
+        createdEpoch: epochNumber,
+        transactionType: 'STAKE',
+      },
+    });
+
+    await incrementEpoch();
+
+    const protocol = await prisma.txProtocol.findUnique({
+      where: { epochNumber },
+    });
+
+    const distributions = protocol.dntRewardDistributions;
+
+    const contribOneRewards = distributions[contributorOne].allocations[contributorTwo];
+
+    expect(contribOneRewards).toBe(
+      (protocol.dntEpochRewardIssuanceAmount * contribRewardPercent) * 0.90,
+    );
   });
 });
 
