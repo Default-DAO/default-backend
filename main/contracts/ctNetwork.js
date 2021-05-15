@@ -24,16 +24,16 @@ router.get('/api/ctNetwork/network', async (req, res) => {
     if (protocol.epochNumber === currentProtocol.epochNumber) {
       // this is the current epoch. since the allocations have not been written
       // to the DB yet we need to calculate the current state.
-      let dntRewardDistributions = await constructRewardDistributions(
+      const dntRewardDistributions = await constructRewardDistributions(
         protocol.epochNumber,
       );
-      
+
       // Remove those without any allocations
-      Object.keys(dntRewardDistributions).map(ethAddress => {
+      Object.keys(dntRewardDistributions).map((ethAddress) => {
         if (_.isEmpty(dntRewardDistributions[ethAddress].allocations)) {
-          delete dntRewardDistributions[ethAddress]
+          delete dntRewardDistributions[ethAddress];
         }
-      })
+      });
 
       // dntRewardDistributions only contains ethAddresses so we an object
       // to map aliases to addresses
@@ -79,7 +79,6 @@ router.get('/api/ctNetwork/network', async (req, res) => {
           transactionType: 'CONTRIBUTOR_REWARD',
         },
       });
-      
 
       result = rewardTxs.map(
         (tx) => ({
@@ -92,7 +91,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
 
     res.send({ result, error: false });
   } catch (err) {
-    console.log("Failed /api/ctNetwork/network: ", err)
+    console.log('Failed /api/ctNetwork/network: ', err);
     res.status(400).send(err);
   }
 });

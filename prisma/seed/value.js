@@ -57,6 +57,14 @@ async function allocateValue() {
     [members.fullyallocated.ethAddress],
     1,
   );
+
+  // epoch 3
+  await valueAllocate(
+    members.fullyallocated.ethAddress,
+    [3, 2, 1],
+    [members.scottsgc.ethAddress, members.zaz.ethAddress, members.soma.ethAddress],
+    3,
+  );
 }
 
 module.exports = {

@@ -112,24 +112,24 @@ async function constructRewardDistributions(epochNumber) {
   // will be used to calculate TRUST delegated to a user. TRUST will be
   // represented by a percentage (percentage of total trust delegated this epoch)
   const netOwnershipMap = {};
-  let unallocatedPercentage = 0;
+  // const unallocatedPercentage = 0;
   dntStakes.forEach((dntStake) => {
     const { ethAddress, sum } = dntStake;
     const totalOwnershipPercent = sum.amount / totalDntStaked.sum.amount;
     netOwnershipMap[ethAddress] = {
       totalStakedDnt: sum.amount,
-      totalOwnershipPercent: sum.amount / totalDntStaked.sum.amount,
+      totalOwnershipPercent,
     };
 
-    if (nonAllocators.includes(ethAddress)) {
-      unallocatedPercentage += totalOwnershipPercent;
-    }
+    // if (nonAllocators.includes(ethAddress)) {
+    //  unallocatedPercentage += totalOwnershipPercent;
+    // }
   });
 
   // unallocated multipler will be used to increase the allocations
   // all contributors receive in the case that someone delegates but
   // does not allocate.
-  const unallocatedMultipler = 1 / (1 - unallocatedPercentage);
+  // const unallocatedMultipler = 1 / (1 - unallocatedPercentage);
 
   // STEP2. CALCULATE REWARDS DISTRIBUTION AND DIVIDE UP epochIssuance
 
@@ -167,8 +167,8 @@ async function constructRewardDistributions(epochNumber) {
 
   allocations.forEach((allocation) => {
     const { fromEthAddress, weight, toEthAddress } = allocation;
-    if (!dntRewardDistributions[fromEthAddress]) {
-      dntRewardDistributions[fromEthAddress] = _.cloneDeep(
+    if (!dntRewardDistributions[toEthAddress]) {
+      dntRewardDistributions[toEthAddress] = _.cloneDeep(
         dntRewardDistributionObj,
       );
     }
@@ -182,10 +182,10 @@ async function constructRewardDistributions(epochNumber) {
     // * (newly minted DNT available for contributor rewards)
     const totalDntAllocated = (trustMap[fromEthAddress] / totalDntStaked.sum.amount)
       * percentageAllocated
-      * unallocatedMultipler
+      // * unallocatedMultipler
       * contributorIssuanceDntAmt;
 
-    dntRewardDistributions[fromEthAddress].allocations[toEthAddress] = totalDntAllocated;
+    dntRewardDistributions[toEthAddress].allocations[fromEthAddress] = totalDntAllocated;
   });
 
   // Get total nominal usdc in lp
