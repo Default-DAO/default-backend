@@ -42,7 +42,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log(err)
+    console.log('Failed POST /api/txValueAllocation/send: ', err)
     res.status(400).send({
       result: {
         error: true,
@@ -79,14 +79,12 @@ async function getAllocationsFromAmount(toAddress, epoch) {
   return totalAmount
 }
 
-router.get('/api/txValueAllocation', async (req, res) => {
+router.get('/api/txValueAllocation/to', async (req, res) => {
   try {
     let {
       ethAddress,
-      page,
       epoch
     } = req.query;
-    page = Number(page)
     epoch = Number(epoch)
 
     // Allocations to other members from ethAddress
@@ -97,10 +95,39 @@ router.get('/api/txValueAllocation', async (req, res) => {
       },
       include: {
         toTxMember: true
-      },
-      skip: page * PAGINATION_LIMIT,
-      take: PAGINATION_LIMIT,
+      }
     });
+
+    const allocationsToAmount = await getDelegationsFromAmount(ethAddress, epoch)
+
+    res.send({
+      result: {
+        allocationsToAmount,
+        allocationsTo,
+        error: false,
+      },
+    });
+  } catch (err) {
+    console.log("Failed GET /api/txValueAllocation/to: ", err)
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+
+router.get('/api/txValueAllocation/from', async (req, res) => {
+  try {
+    let {
+      ethAddress,
+      skip,
+      epoch
+    } = req.query;
+    skip = Number(skip)
+    epoch = Number(epoch)
 
     // Allocations to ethAddress from other members
     const allocationsFrom = await prisma.txValueAllocation.findMany({
@@ -111,25 +138,21 @@ router.get('/api/txValueAllocation', async (req, res) => {
       include: {
         fromTxMember: true
       },
-      skip: page * PAGINATION_LIMIT,
+      skip,
       take: PAGINATION_LIMIT,
     });
-
-    const allocationsToAmount = await getDelegationsFromAmount(ethAddress, epoch)
 
     const allocationsFromAmount = await getAllocationsFromAmount(ethAddress, epoch)
 
     res.send({
       result: {
-        allocationsToAmount,
         allocationsFromAmount,
-        allocationsTo,
         allocationsFrom,
         error: false,
       },
     });
   } catch (err) {
-    console.log("E: ", err)
+    console.log("Failed GET /api/txValueAllocation/from: ", err)
     res.status(400).send({
       result: {
         error: true,

@@ -1,25 +1,25 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 
 const members = {
   fullyallocated: {
     ethAddress: '0x02AAF5B44123a20C5565b6C8f557C41ec85b39D4',
-    alias: 'fullyallocated'
+    alias: 'fullyallocated',
   },
   soma: {
     ethAddress: '0x5672b4355c4Fd85c016d22d828f6A3875FdfcD43',
-    alias: 'soma'
+    alias: 'soma',
   },
   zaz: {
-    ethAddress: '0x06A4ABf578D8739Bf15D779daf5D445aeE478e5B',
-    alias: 'zaz'
+    ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2',
+    alias: 'zaz',
   },
   scottsgc: {
-    ethAddress: '0xd7d9bce78acead3eb9199097c0db6f03a1f3082a',
-    alias: 'scottsgc'
-  }
-}
-
+    ethAddress: '0xd7d9bce78aCeAd3EB9199097C0dB6F03A1f3082A',
+    alias: 'scottsgc',
+  },
+};
 const randomEthAddresses = [
   '0xACfCc092898B9BB277D60a13084233609c8011f7',
   '0x46d036e5685d9b30630b1526243ad37F4A5D3a0C',
@@ -39,8 +39,8 @@ const randomEthAddresses = [
   '0x8fB594CFc763862966B0715949b681f0AE3e60F9',
   '0x644B7D1FaBe52F106a298f2EE2f368b6FEceA530',
   '0xF2b24E09027816f265DAB32dCa84dd274c4122df',
-  '0xc042cc6FfC6D0f9c459793EeD1f0fb8EE34f6771'
-]
+  '0xc042cc6FfC6D0f9c459793EeD1f0fb8EE34f6771',
+];
 
 async function apiMember() {
   const fullyallocated = await prisma.apiMember.upsert({
@@ -52,8 +52,8 @@ async function apiMember() {
       totalRewardsEarned: 50000,
       claimed: true,
       cap: 100000,
-    }
-  })
+    },
+  });
 
   const soma = await prisma.apiMember.upsert({
     where: { ethAddress: members.soma.ethAddress },
@@ -63,9 +63,9 @@ async function apiMember() {
       totalLiquidity: 100000,
       totalRewardsEarned: 50000,
       claimed: true,
-      cap: 100000
-    }
-  })
+      cap: 100000,
+    },
+  });
 
   const zaz = await prisma.apiMember.upsert({
     where: { ethAddress: members.zaz.ethAddress },
@@ -76,8 +76,8 @@ async function apiMember() {
       totalRewardsEarned: 50000,
       claimed: true,
       cap: 100000,
-    }
-  })
+    },
+  });
 
   const scottsgc = await prisma.apiMember.upsert({
     where: { ethAddress: members.scottsgc.ethAddress },
@@ -88,23 +88,23 @@ async function apiMember() {
       totalRewardsEarned: 50000,
       claimed: false,
       cap: 100000,
-    }
-  })
+    },
+  });
 
-  let randomApiMembers = []
+  const randomApiMembers = [];
   randomEthAddresses.forEach((address, i) => {
     randomApiMembers.push({
       ethAddress: address,
       totalLiquidity: 100000,
       totalRewardsEarned: 50000,
       claimed: true,
-      cap: 100000
-    })
-  })
+      cap: 100000,
+    });
+  });
   await prisma.apiMember.createMany({
     data: randomApiMembers,
     skipDuplicates: true,
-  })
+  });
 }
 
 async function txMember() {
@@ -118,8 +118,8 @@ async function txMember() {
       createdEpoch: 0,
       liquidityCapUsdc: 100000,
       liquidityCapEpoch: 100000,
-    }
-  })
+    },
+  });
 
   const soma = await prisma.txMember.upsert({
     where: { ethAddress: members.soma.ethAddress },
@@ -131,8 +131,8 @@ async function txMember() {
       createdEpoch: 0,
       liquidityCapUsdc: 100000,
       liquidityCapEpoch: 100000,
-    }
-  })
+    },
+  });
 
   const zaz = await prisma.txMember.upsert({
     where: { ethAddress: members.zaz.ethAddress },
@@ -144,8 +144,8 @@ async function txMember() {
       createdEpoch: 0,
       liquidityCapUsdc: 100000,
       liquidityCapEpoch: 100000,
-    }
-  })
+    },
+  });
 
   const scottsgc = await prisma.txMember.upsert({
     where: { ethAddress: members.scottsgc.ethAddress },
@@ -157,28 +157,28 @@ async function txMember() {
       createdEpoch: 0,
       liquidityCapUsdc: 100000,
       liquidityCapEpoch: 100000,
-    }
-  })
-  let randomApiMembers = []
+    },
+  });
+  const randomApiMembers = [];
   randomEthAddresses.forEach((address, i) => {
     randomApiMembers.push({
       ethAddress: address,
       type: 'PERSONAL',
-      alias: 'user' + i,
+      alias: `user${i}`,
       createdEpoch: (i % 3) + 1,
       liquidityCapUsdc: 100000,
-      liquidityCapEpoch: 100000
-    })
-  })
+      liquidityCapEpoch: 100000,
+    });
+  });
   await prisma.txMember.createMany({
     data: randomApiMembers,
     skipDuplicates: true,
-  })
+  });
 }
 
 module.exports = {
   members,
   randomEthAddresses,
   apiMember,
-  txMember
-}
+  txMember,
+};

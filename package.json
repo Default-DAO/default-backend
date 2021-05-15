@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "docker-compose build --no-cache && docker-compose up --abort-on-container-exit --force-recreate",
+    "test": "docker-compose up --build --abort-on-container-exit --force-recreate --renew-anon-volumes",
     "containertest": "jest -i",
     "prod": "pm2-runtime start ecosystem.config.js --env production",
     "preprod": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
@@ -36,10 +36,13 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "eslint": "^7.25.0",
+    "eslint": "^7.26.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prismatik": "^2.2.0",
-    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-import": "^2.23.0",
+    "eslint-plugin-jest": "^24.3.6",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-mocha": "^8.1.0",
     "jest": "^26.6.3",
     "prisma": "^2.21.2"
   }

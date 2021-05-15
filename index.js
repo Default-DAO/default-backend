@@ -13,6 +13,7 @@ const value = require('./main/contracts/ctValue');
 const protocol = require('./main/contracts/ctProtocol');
 const pools = require('./main/contracts/ctPools');
 const stake = require('./main/contracts/ctStake');
+const network = require('./main/contracts/ctNetwork');
 
 const { sendWrapped, wrappedError } = require('./utils/wrappedResponse');
 
@@ -25,7 +26,6 @@ const app = express();
 const corsOptions = {
   origin: process.env.FE_URL,
 };
-
 
 app.use(cors(corsOptions));
 app.options('*', cors());
@@ -40,6 +40,7 @@ app.use(value.router);
 app.use(protocol.router);
 app.use(pools.router);
 app.use(stake.router);
+app.use(network.router);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console

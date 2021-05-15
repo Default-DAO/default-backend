@@ -5,10 +5,11 @@ const { prisma } = require('../../prisma/index')
 
 router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
-    const {
-      page,
+    let {
+      skip,
       excludeEthAddress,
     } = req.query;
+    skip = Number(skip)
 
     // get all claimed members that are not excludeEthAddress. 
     // if excludeEthAddress is null this will just return all 
@@ -18,7 +19,7 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
         ethAddress: {not: excludeEthAddress},
         apiMember: { claimed: true},
       },
-      skip: page * PAGINATION_LIMIT,
+      skip,
       take: PAGINATION_LIMIT,
     });
 
