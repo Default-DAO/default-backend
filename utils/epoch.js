@@ -42,6 +42,36 @@ function isMonday() {
 }
 
 async function constructRewardDistributions(epochNumber) {
+  /*
+
+  Here is the structure for dntRewardsDistributions JSONobject.
+  This object will act like a recepit for all delegations and allocations
+  that happened over the epoch.
+
+  @todo maybe it would be easier if we provided delegations received and
+  allocations receivedd instead of delegations given and allocations received.
+  This was just the easiest way to write the transactions to the DB but if it causes
+  issues we can change it.
+
+  Example Object:
+    {
+      "0xACfCc092898B9BB277D60a13084233609c8011f7": {  // address
+        "lpReward": 10,  // 0xACf... received 10 DNT from providing liquidity
+        "allocations": {   // allocations this address has received
+
+          // 0xACfCc... received 45 DNT in allocations from 0x46d0...
+          "0x46d036e5685d9b30630b1526243ad37F4A5D3a0C": 45
+        },
+        "delegations": {  // delegations this address has given
+
+          // 0xACfCc... delegated 9000 DNT to 0x46d0...
+          "0x46d036e5685d9b30630b1526243ad37F4A5D3a0C": 9000
+        }
+      },
+      "0x46d036e5685d9b30630b1526243ad37F4A5D3a0C": {...}
+      "0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2": {...}
+    }
+  */
   const currentProtocol = await prisma.txProtocol.findUnique({
     where: { epochNumber },
   });
@@ -86,12 +116,6 @@ async function constructRewardDistributions(epochNumber) {
     allocationWeightMap[fromEthAddress] = sum.weight;
   });
 
-  const allDelegators = Object.keys(delegationWeightMap);
-  const allAllocators = Object.keys(allocationWeightMap);
-  const nonAllocators = allDelegators.filter((x) => !allAllocators.includes(x));
-
-  console.log(`nonAllocators === ${nonAllocators}`);
-
   // STEP1. CALCULATE DNT SHARES OF ALL MEMBERS BY AGGREGATING txDntTokens
 
   // Get total dnt staked
@@ -112,24 +136,13 @@ async function constructRewardDistributions(epochNumber) {
   // will be used to calculate TRUST delegated to a user. TRUST will be
   // represented by a percentage (percentage of total trust delegated this epoch)
   const netOwnershipMap = {};
-  let unallocatedPercentage = 0;
   dntStakes.forEach((dntStake) => {
     const { ethAddress, sum } = dntStake;
-    const totalOwnershipPercent = sum.amount / totalDntStaked.sum.amount;
     netOwnershipMap[ethAddress] = {
       totalStakedDnt: sum.amount,
       totalOwnershipPercent: sum.amount / totalDntStaked.sum.amount,
     };
-
-    if (nonAllocators.includes(ethAddress)) {
-      unallocatedPercentage += totalOwnershipPercent;
-    }
   });
-
-  // unallocated multipler will be used to increase the allocations
-  // all contributors receive in the case that someone delegates but
-  // does not allocate.
-  const unallocatedMultipler = 1 / (1 - unallocatedPercentage);
 
   // STEP2. CALCULATE REWARDS DISTRIBUTION AND DIVIDE UP epochIssuance
 
@@ -167,8 +180,8 @@ async function constructRewardDistributions(epochNumber) {
 
   allocations.forEach((allocation) => {
     const { fromEthAddress, weight, toEthAddress } = allocation;
-    if (!dntRewardDistributions[fromEthAddress]) {
-      dntRewardDistributions[fromEthAddress] = _.cloneDeep(
+    if (!dntRewardDistributions[toEthAddress]) {
+      dntRewardDistributions[toEthAddress] = _.cloneDeep(
         dntRewardDistributionObj,
       );
     }
@@ -178,14 +191,12 @@ async function constructRewardDistributions(epochNumber) {
 
     // (percentage total ownership fromEthAddress has of all delegated dnt)
     // * (percentage allocated of staked dnt from fromEthAddress to toEthAddress)
-    // * (percentage of network that is unallocated + 100%)
     // * (newly minted DNT available for contributor rewards)
     const totalDntAllocated = (trustMap[fromEthAddress] / totalDntStaked.sum.amount)
       * percentageAllocated
-      * unallocatedMultipler
       * contributorIssuanceDntAmt;
 
-    dntRewardDistributions[fromEthAddress].allocations[toEthAddress] = totalDntAllocated;
+    dntRewardDistributions[toEthAddress].allocations[fromEthAddress] = totalDntAllocated;
   });
 
   // Get total nominal usdc in lp
@@ -223,13 +234,26 @@ async function incrementEpoch() {
     currentProtocol.epochNumber,
   );
 
+  // calculate unallocatedMultiplier
+  // this will be used to distribute unallocated DNT evenly
+  let totalDntAllocated = 0;
+  Object.keys(dntRewardDistributions).forEach((ethAddress) => {
+    const { allocations } = dntRewardDistributions[ethAddress];
+
+    Object.keys(allocations).forEach((fromEthAddress) => {
+      totalDntAllocated += allocations[fromEthAddress];
+    });
+  });
+  const percentAllocated = totalDntAllocated
+    / (currentProtocol.dntEpochRewardIssuanceAmount * contribRewardPercent);
+  const unallocatedMultipler = (1 / (percentAllocated || 1));
+
   // STEP 3. LP REWARDS: AGGREGATE SHARES FOR LPS
   // STEP 4. CONTRIBUTOR REWARDS: AGGREGATE SHARES FOR CONTRIBUTORS
   const contributorRewards = [];
   const lpRewards = [];
   Object.keys(dntRewardDistributions).forEach((ethAddress) => {
     const { lpReward, allocations } = dntRewardDistributions[ethAddress];
-
     if (lpReward) {
       lpRewards.push({
         ethAddress,
@@ -240,15 +264,23 @@ async function incrementEpoch() {
     }
 
     if (!_.isEmpty(allocations)) {
-      let totalDntRewarded = 0;
+      let totalReward = 0;
       Object.keys(allocations).forEach((fromEthAddress) => {
-        totalDntRewarded += allocations[fromEthAddress];
+        // update dntRewardDistributions with the final value
+        const finalAllocation = allocations[fromEthAddress] * unallocatedMultipler;
+
+        // add the final allocation total to the running total
+        totalReward += finalAllocation;
+
+        // update the dntRewardDistributions object to reflect the final total
+        dntRewardDistributions[ethAddress].allocations[fromEthAddress] = finalAllocation;
       });
+
       contributorRewards.push({
         ethAddress,
         createdEpoch: currentProtocol.epochNumber,
         transactionType: 'CONTRIBUTOR_REWARD',
-        amount: totalDntRewarded,
+        amount: totalReward,
       });
     }
   });

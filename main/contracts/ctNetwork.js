@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const { _ } = require('lodash');
 const {
   getCurrentProtocol,
   contribRewardPercent,
@@ -13,9 +14,11 @@ router.get('/api/ctNetwork/network', async (req, res) => {
     const protocol = await prisma.txProtocol.findUnique({
       where: { epochNumber: epoch },
     });
+
     const currentProtocol = await getCurrentProtocol();
     const totalContribRewards = protocol.dntEpochRewardIssuanceAmount
       * contribRewardPercent;
+
     let result = [];
 
     if (protocol.epochNumber === currentProtocol.epochNumber) {
@@ -24,6 +27,13 @@ router.get('/api/ctNetwork/network', async (req, res) => {
       const dntRewardDistributions = await constructRewardDistributions(
         protocol.epochNumber,
       );
+
+      // Remove those without any allocations
+      Object.keys(dntRewardDistributions).map((ethAddress) => {
+        if (_.isEmpty(dntRewardDistributions[ethAddress].allocations)) {
+          delete dntRewardDistributions[ethAddress];
+        }
+      });
 
       // dntRewardDistributions only contains ethAddresses so we an object
       // to map aliases to addresses
@@ -81,6 +91,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
 
     res.send({ result, error: false });
   } catch (err) {
+    console.log('Failed /api/ctNetwork/network: ', err);
     res.status(400).send(err);
   }
 });
