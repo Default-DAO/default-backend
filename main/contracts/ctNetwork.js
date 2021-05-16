@@ -57,6 +57,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
         });
 
         result.push({
+          ethAddress: ethAddress,
           alias: ethAliasMap[ethAddress],
           amountDnt: totalDntAllocated,
           percentTotal: totalDntAllocated / totalContribRewards,
@@ -70,6 +71,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
           txMember: {
             select: {
               alias: true,
+              ethAddress: true
             },
           },
           amount: true,
@@ -82,6 +84,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
 
       result = rewardTxs.map(
         (tx) => ({
+          ethAddress: tx.txMember.ethAddress,
           alias: tx.txMember.alias,
           amountDnt: tx.amount,
           percentTotal: tx.amount / totalContribRewards,
