@@ -11,13 +11,13 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
   try {
     let {
       ethAddress,
-      amountDnt,
+      amount,
     } = req.body;
-    amountDnt = Number(amountDnt);
+    amount = Number(amount);
 
     const memberDnt = await getMemberDnt();
     const memberDntStaked = await getMemberDntStaked();
-    if (amountDnt > memberDnt - memberDntStaked) {
+    if (amount > memberDnt - memberDntStaked) {
       res.send({
         result: {
           error: true,
@@ -49,7 +49,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
     const stake = await prisma.txDntToken.create({
       data: {
         ethAddress,
-        amountDnt,
+        amount,
         createdEpoch,
         transactionType: 'STAKE',
       },
