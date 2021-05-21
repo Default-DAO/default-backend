@@ -7,18 +7,17 @@ const { PrismaClient } = require('@prisma/client');
 // PrismaClient is attached to the `global` object in development to prevent
 // exhausting database connection limit.
 
-
 let prisma;
 
-const options = { log: [`warn`, `error`], };
+const options = { log: ['warn', 'error'] };
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient(options)
+  prisma = new PrismaClient(options);
 } else {
   if (!global.prisma) {
-    global.prisma = new PrismaClient(options)
+    global.prisma = new PrismaClient(options);
   }
-  prisma = global.prisma
+  prisma = global.prisma;
 }
 
 module.exports = {

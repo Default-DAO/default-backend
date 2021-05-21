@@ -1,5 +1,6 @@
 const { _ } = require('lodash');
 const { prisma } = require('../prisma/index');
+const { round } = require('./tokenmath');
 
 const genesisEpochDate = new Date('April 19, 2021 12:00:00');
 
@@ -85,12 +86,10 @@ async function constructRewardDistributions(epochNumber) {
   const trustMap = {};
 
   // contributors get 50% of new DNT minted
-  const contributorIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount
-   * contribRewardPercent;
+  const contributorIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount / 2;
 
   // lps get 50% of new DNT minted
-  const lpIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount
-   * lpRewardPercent;
+  const lpIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount / 2;
 
   // construct a total weight map for delegations
   const delegationWeightMap = {};
@@ -170,7 +169,7 @@ async function constructRewardDistributions(epochNumber) {
     trustMap[toEthAddress] = (trustMap[toEthAddress] || 0) + totalDntDelegated;
 
     // populate the dntRewardDistributions obj
-    dntRewardDistributions[fromEthAddress].delegations[toEthAddress] = totalDntDelegated;
+    dntRewardDistributions[fromEthAddress].delegations[toEthAddress] = round(totalDntDelegated);
   });
 
   // populate allocations into dntRewardDistributions obj
@@ -186,6 +185,13 @@ async function constructRewardDistributions(epochNumber) {
       );
     }
 
+    // base case. if there is no trust (aka no DNT has been delegated to this user)
+    if (!trustMap[fromEthAddress]) {
+      throw new Error(
+        `${fromEthAddress} has attempted to allocate to ${toEthAddress} without being delegating to`,
+      );
+    }
+
     // percentage of total weight fromEthAddress allocated to toEthAddress
     const percentageAllocated = weight / allocationWeightMap[fromEthAddress];
 
@@ -196,7 +202,7 @@ async function constructRewardDistributions(epochNumber) {
       * percentageAllocated
       * contributorIssuanceDntAmt;
 
-    dntRewardDistributions[toEthAddress].allocations[fromEthAddress] = totalDntAllocated;
+    dntRewardDistributions[toEthAddress].allocations[fromEthAddress] = round(totalDntAllocated);
   });
 
   // Get total nominal usdc in lp
@@ -217,12 +223,11 @@ async function constructRewardDistributions(epochNumber) {
     if (!dntRewardDistributions[ethAddress]) {
       dntRewardDistributions[ethAddress] = _.cloneDeep(dntRewardDistributionObj);
     }
-
     const percentageOwnership = sum.amount / totalUsdc.sum.amount;
 
     const lpRewardsDnt = percentageOwnership * lpIssuanceDntAmt;
 
-    dntRewardDistributions[ethAddress].lpReward = lpRewardsDnt;
+    dntRewardDistributions[ethAddress].lpReward = round(lpRewardsDnt);
   });
 
   return dntRewardDistributions;
@@ -246,7 +251,7 @@ async function incrementEpoch() {
   });
   const percentAllocated = totalDntAllocated
     / (currentProtocol.dntEpochRewardIssuanceAmount * contribRewardPercent);
-  const unallocatedMultipler = (1 / (percentAllocated || 1));
+  const unallocatedMultipler = round((1 / (percentAllocated || 1)));
 
   // STEP 3. LP REWARDS: AGGREGATE SHARES FOR LPS
   // STEP 4. CONTRIBUTOR REWARDS: AGGREGATE SHARES FOR CONTRIBUTORS

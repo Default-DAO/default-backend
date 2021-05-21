@@ -2,10 +2,10 @@ const router = require('express').Router();
 const { BAD_REQUEST, PAGINATION_LIMIT, ALREADY_OCCURRED } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { prisma } = require('../../prisma/index')
+const { prisma } = require('../../prisma/index');
 
 const { authMiddleware } = require('../../utils/auth');
-const { getMemberDnt, getMemberDntStaked } = require('./ctPools')
+const { getMemberDnt, getMemberDntStaked } = require('./ctPools');
 
 router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => {
   try {
@@ -13,18 +13,18 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
       ethAddress,
       amountDnt,
     } = req.body;
-    amountDnt = Number(amountDnt)
+    amountDnt = Number(amountDnt);
 
-    let memberDnt = await getMemberDnt()
-    let memberDntStaked = await getMemberDntStaked()
+    const memberDnt = await getMemberDnt();
+    const memberDntStaked = await getMemberDntStaked();
     if (amountDnt > memberDnt - memberDntStaked) {
       res.send({
         result: {
           error: true,
           errorCode: OVER_LIMIT,
-        }
+        },
       });
-      return
+      return;
     }
     // Add epoch to each delegation
     const createdEpoch = await getCurrentEpoch();
@@ -33,17 +33,17 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
       where: {
         ethAddress,
         createdEpoch,
-        transactionType: 'STAKE'
-      }
-    })
-    if (exists && exists.amount) {
+        transactionType: 'STAKE',
+      },
+    });
+    if (exists && exists.amount && exists.amount.toNumber()) {
       res.send({
         result: {
           error: true,
           errorCode: ALREADY_OCCURRED,
-        }
+        },
       });
-      return
+      return;
     }
 
     const stake = await prisma.txDntToken.create({
@@ -51,13 +51,13 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
         ethAddress,
         amountDnt,
         createdEpoch,
-        transactionType: 'STAKE'
+        transactionType: 'STAKE',
       },
     });
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log("Failed POST /api/txStakeDelegation/stake: ", err)
+    console.log('Failed POST /api/txStakeDelegation/stake: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -77,7 +77,7 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
     // Add epoch to each delegation
     const epoch = await getCurrentEpoch();
 
-    for (let delegation of delegations) {
+    for (const delegation of delegations) {
       delegation.epoch = epoch;
     }
 
@@ -85,14 +85,14 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
     // These delegations if theyve been added will be deleted
     // and not recreated
     const delegationsToWrite = delegations.filter(
-      d => d.weight > 0 && d.toEthAddress !== ethAddress
+      (d) => d.weight > 0 && d.toEthAddress !== ethAddress,
     );
 
     // Delete all existing delegations
     await prisma.txStakeDelegation.deleteMany({
       where: {
         fromEthAddress: ethAddress,
-        epoch
+        epoch,
       },
     });
 
@@ -103,7 +103,7 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log('Failed POST /api/txStakeDelegation/send: ', err)
+    console.log('Failed POST /api/txStakeDelegation/send: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -117,9 +117,9 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
   try {
     let {
       ethAddress,
-      epoch
+      epoch,
     } = req.query;
-    epoch = Number(epoch)
+    epoch = Number(epoch);
 
     // Delegations to other members from ethAddress
     const delegationsTo = await prisma.txStakeDelegation.findMany({
@@ -128,29 +128,29 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
         epoch,
       },
       include: {
-        toTxMember: true
-      }
+        toTxMember: true,
+      },
     });
 
     const delegationsToAmount = await prisma.txDntToken.findFirst({
       where: {
         ethAddress,
-        createdEpoch: epoch
+        createdEpoch: epoch,
       },
       orderBy: {
-        updatedAt: "desc"
-      }
+        updatedAt: 'desc',
+      },
     });
 
     res.send({
       result: {
-        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount : 0,
+        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount.toNumber() : 0,
         delegationsTo,
         error: false,
       },
     });
   } catch (err) {
-    console.log("Failed GET /api/txStakeDelegation/to: ", err)
+    console.log('Failed GET /api/txStakeDelegation/to: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -165,10 +165,10 @@ router.get('/api/txStakeDelegation/from', async (req, res) => {
     let {
       ethAddress,
       skip,
-      epoch
+      epoch,
     } = req.query;
-    skip = Number(skip)
-    epoch = Number(epoch)
+    skip = Number(skip);
+    epoch = Number(epoch);
 
     // Delegations to ethAddress from other members
     const delegationsFrom = await prisma.txStakeDelegation.findMany({
@@ -177,13 +177,13 @@ router.get('/api/txStakeDelegation/from', async (req, res) => {
         epoch,
       },
       include: {
-        fromTxMember: true
+        fromTxMember: true,
       },
       skip,
       take: PAGINATION_LIMIT,
     });
 
-    const delegationsFromAmount = await getDelegationsFromAmount(ethAddress, epoch)
+    const delegationsFromAmount = await getDelegationsFromAmount(ethAddress, epoch);
 
     res.send({
       result: {
@@ -193,7 +193,7 @@ router.get('/api/txStakeDelegation/from', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log("Failed GET /api/txStakeDelegation/from: ", err)
+    console.log('Failed GET /api/txStakeDelegation/from: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -208,41 +208,41 @@ async function getDelegationsFromAmount(toAddress, epoch) {
     where: {
       toEthAddress: toAddress,
       epoch,
-    }
+    },
   });
 
-  let totalAmount = 0
+  let totalAmount = 0;
   for (let i = 0; i < delegationsFrom.length; i++) {
-    let fromEthAddress = delegationsFrom[i].fromEthAddress
-    // @todo we should not be making a query in a 
+    const { fromEthAddress } = delegationsFrom[i];
+    // @todo we should not be making a query in a
     // for loop like this. there is a better more efficient way.
-    let totalWeight = await prisma.txStakeDelegation.aggregate({
+    const totalWeight = await prisma.txStakeDelegation.aggregate({
       where: {
         fromEthAddress,
         epoch,
       },
       sum: {
-        weight: true
-      }
-    })
+        weight: true,
+      },
+    });
     let stakeAmount = await prisma.txDntToken.findFirst({
       where: {
         ethAddress: fromEthAddress,
-        createdEpoch: epoch
+        createdEpoch: epoch,
       },
       orderBy: {
-        updatedAt: "desc"
-      }
+        updatedAt: 'desc',
+      },
     });
-    stakeAmount = stakeAmount ? stakeAmount.amount : 0
+    stakeAmount = stakeAmount ? stakeAmount.amount.toNumber() : 0;
 
-    totalAmount += stakeAmount * (delegationsFrom[i].weight / totalWeight.sum.weight)
+    totalAmount += stakeAmount * (delegationsFrom[i].weight / totalWeight.sum.weight);
   }
 
-  return totalAmount
+  return totalAmount;
 }
 
 module.exports = {
   getDelegationsFromAmount,
-  router
+  router,
 };
