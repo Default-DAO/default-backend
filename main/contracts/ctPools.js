@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { BAD_REQUEST, OVER_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { prisma } = require('../../prisma/index')
+const { prisma } = require('../../prisma/index');
 
 const { authMiddleware } = require('../../utils/auth');
 
@@ -13,35 +13,37 @@ router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
       amount,
     } = req.body;
 
-    let member = await prisma.txMember.findUnique({
+    const member = await prisma.txMember.findUnique({
       where: {
-        ethAddress
-      }
-    })
+        ethAddress,
+      },
+    });
 
-    let epoch = await getCurrentEpoch()
+    const epoch = await getCurrentEpoch();
 
-    let epochDeposits = await prisma.txUsdcToken.aggregate({
+    const epochDeposits = await prisma.txUsdcToken.aggregate({
       where: {
         ethAddress,
         transactionType: 'DEPOSIT',
-        createdEpoch: epoch
+        createdEpoch: epoch,
       },
       sum: {
-        amount: true
-      }
-    })
+        amount: true,
+      },
+    });
 
-    let depositLimit = member.liquidityCapUsdc - epochDeposits.sum.amount - amount
+    const epochDepositsAmt = epochDeposits.sum.amount ? epochDeposits.sum.amount.toNumber() : 0;
+
+    const depositLimit = member.liquidityCapUsdc - epochDepositsAmt - amount;
 
     if (depositLimit < 0) {
       res.send({
         result: {
           error: true,
           errorCode: OVER_LIMIT,
-        }
+        },
       });
-      return
+      return;
     }
 
     if (depositLimit >= 0) {
@@ -50,25 +52,25 @@ router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
           ethAddress,
           createdEpoch: epoch,
           transactionType: 'DEPOSIT',
-          amount
-        }
-      })
+          amount,
+        },
+      });
     }
 
     if (depositLimit == 0) {
       await prisma.txMember.update({
         where: {
-          ethAddress
+          ethAddress,
         },
         data: {
-          liquidityCapUsdc: 50000
-        }
-      })
+          liquidityCapUsdc: 50000,
+        },
+      });
     }
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log("Failed POST /api/ctPools/addLiquidity: ", err)
+    console.log('Failed POST /api/ctPools/addLiquidity: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -154,56 +156,60 @@ async function getUsdc() {
   // Usdc
   const totalUsdcDeposited = await prisma.txUsdcToken.aggregate({
     where: {
-      transactionType: "DEPOSIT"
+      transactionType: 'DEPOSIT',
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
   const totalUsdcWithdrawn = await prisma.txUsdcToken.aggregate({
     where: {
-      transactionType: "WITHDRAW"
+      transactionType: 'WITHDRAW',
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
-  return totalUsdcDeposited.sum.amount - totalUsdcWithdrawn.sum.amount;
+  const totalUsdcDepositedAmt = totalUsdcDeposited.sum.amount
+    ? totalUsdcDeposited.sum.amount.toNumber() : 0;
+  const totalUsdcWithdrawnAmt = totalUsdcWithdrawn.sum.amount
+    ? totalUsdcWithdrawn.sum.amount.toNumber() : 0;
+  return totalUsdcDepositedAmt - totalUsdcWithdrawnAmt;
 }
 
 async function getDnt() {
   const totalDnt = await prisma.txDntToken.aggregate({
     where: {
       OR: [
-        { transactionType: "CONTRIBUTOR_REWARD" },
-        { transactionType: "LP_REWARD" }
-      ]
+        { transactionType: 'CONTRIBUTOR_REWARD' },
+        { transactionType: 'LP_REWARD' },
+      ],
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
-  return totalDnt.sum.amount
+  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount.toNumber() : 0;
+  return totalDntAmt;
 }
 
 async function getDntStaked() {
   const totalDntStaked = await prisma.txDntToken.aggregate({
     where: {
-      transactionType: "STAKE",
+      transactionType: 'STAKE',
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
-  return totalDntStaked.sum.amount
+  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount.toNumber() : 0;
 }
 
 router.get('/api/ctPools', async (req, res) => {
   try {
-
-    let usdc = await getUsdc()
-    let dnt = await getDnt()
-    let dntStaked = await getDntStaked()
+    const usdc = await getUsdc();
+    const dnt = await getDnt();
+    const dntStaked = await getDntStaked();
 
     res.send({
       result: {
@@ -214,7 +220,7 @@ router.get('/api/ctPools', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log('Failed GET /api/ctPools: ', err)
+    console.log('Failed GET /api/ctPools: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -224,28 +230,32 @@ router.get('/api/ctPools', async (req, res) => {
   }
 });
 
-
 async function getMemberUsdc(ethAddress) {
   // Usdc
   const totalUsdcDeposited = await prisma.txUsdcToken.aggregate({
     where: {
-      transactionType: "DEPOSIT",
-      ethAddress
+      transactionType: 'DEPOSIT',
+      ethAddress,
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
   const totalUsdcWithdrawn = await prisma.txUsdcToken.aggregate({
     where: {
-      transactionType: "WITHDRAW",
-      ethAddress
+      transactionType: 'WITHDRAW',
+      ethAddress,
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
-  return totalUsdcDeposited.sum.amount - totalUsdcWithdrawn.sum.amount;
+  const totalUsdcDepositedAmt = totalUsdcDeposited.sum.amount
+    ? totalUsdcDeposited.sum.amount.toNumber() : 0;
+  const totalUsdcWithdrawnAmt = totalUsdcWithdrawn.sum.amount
+    ? totalUsdcWithdrawn.sum.amount.toNumber() : 0;
+
+  return totalUsdcDepositedAmt - totalUsdcWithdrawnAmt;
 }
 
 async function getMemberDnt(ethAddress) {
@@ -253,44 +263,45 @@ async function getMemberDnt(ethAddress) {
   const totalDnt = await prisma.txDntToken.aggregate({
     where: {
       OR: [
-        { transactionType: "CONTRIBUTOR_REWARD" },
-        { transactionType: "LP_REWARD" }
+        { transactionType: 'CONTRIBUTOR_REWARD' },
+        { transactionType: 'LP_REWARD' },
       ],
-      ethAddress
+      ethAddress,
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
 
-  return totalDnt.sum.amount
+  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount.toNumber() : 0;
+
+  return totalDntAmt;
 }
 
 async function getMemberDntStaked(ethAddress) {
   // Dnt Staked
   const totalDntStaked = await prisma.txDntToken.aggregate({
     where: {
-      transactionType: "STAKE",
-      ethAddress
+      transactionType: 'STAKE',
+      ethAddress,
     },
     sum: {
-      amount: true
-    }
+      amount: true,
+    },
   });
-
-  return totalDntStaked.sum.amount
+  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount.toNumber() : 0;
 }
 
-//Get pool information for member
+// Get pool information for member
 router.get('/api/ctPools/member', async (req, res) => {
   try {
-    let {
-      ethAddress
+    const {
+      ethAddress,
     } = req.query;
 
-    let usdc = await getMemberUsdc(ethAddress)
-    let dnt = await getMemberDnt(ethAddress)
-    let dntStaked = await getMemberDntStaked(ethAddress)
+    const usdc = await getMemberUsdc(ethAddress);
+    const dnt = await getMemberDnt(ethAddress);
+    const dntStaked = await getMemberDntStaked(ethAddress);
 
     res.send({
       result: {
@@ -301,7 +312,7 @@ router.get('/api/ctPools/member', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log('Failed GET /api/ctPools/member: ', err)
+    console.log('Failed GET /api/ctPools/member: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -318,5 +329,5 @@ module.exports = {
   getDntStaked,
   getMemberUsdc,
   getMemberDnt,
-  getMemberDntStaked
+  getMemberDntStaked,
 };

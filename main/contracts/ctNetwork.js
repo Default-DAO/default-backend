@@ -16,8 +16,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
     });
 
     const currentProtocol = await getCurrentProtocol();
-    const totalContribRewards = protocol.dntEpochRewardIssuanceAmount
-      * contribRewardPercent;
+    const totalContribRewards = protocol.dntEpochRewardIssuanceAmount / 2;
 
     let result = [];
 
@@ -57,7 +56,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
         });
 
         result.push({
-          ethAddress: ethAddress,
+          ethAddress,
           alias: ethAliasMap[ethAddress],
           amountDnt: totalDntAllocated,
           percentTotal: totalDntAllocated / totalContribRewards,
@@ -71,7 +70,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
           txMember: {
             select: {
               alias: true,
-              ethAddress: true
+              ethAddress: true,
             },
           },
           amount: true,
@@ -86,8 +85,8 @@ router.get('/api/ctNetwork/network', async (req, res) => {
         (tx) => ({
           ethAddress: tx.txMember.ethAddress,
           alias: tx.txMember.alias,
-          amountDnt: tx.amount,
-          percentTotal: tx.amount / totalContribRewards,
+          amountDnt: tx.amount ? tx.amount.toNumber() : 0,
+          percentTotal: ((tx.amount ? tx.amount.toNumber() : 0) / totalContribRewards),
         }),
       );
     }
