@@ -36,7 +36,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
         transactionType: 'STAKE',
       },
     });
-    if (exists && exists.amount && exists.amount.toNumber()) {
+    if (exists && exists.amount && exists.amount) {
       res.send({
         result: {
           error: true,
@@ -144,7 +144,7 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
 
     res.send({
       result: {
-        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount.toNumber() : 0,
+        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount : 0,
         delegationsTo,
         error: false,
       },
@@ -234,7 +234,7 @@ async function getDelegationsFromAmount(toAddress, epoch) {
         updatedAt: 'desc',
       },
     });
-    stakeAmount = stakeAmount ? stakeAmount.amount.toNumber() : 0;
+    stakeAmount = stakeAmount ? stakeAmount.amount : 0;
 
     totalAmount += stakeAmount * (delegationsFrom[i].weight / totalWeight.sum.weight);
   }
