@@ -1,8 +1,12 @@
 const router = require('express').Router();
-const { BAD_REQUEST, PAGINATION_LIMIT } = require('../../config/keys');
+const {
+  BAD_REQUEST,
+  PAGINATION_LIMIT,
+  NO_DELEGATION_FOUND,
+} = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
-const { prisma } = require('../../prisma/index')
+const { prisma } = require('../../prisma/index');
 
 const { authMiddleware } = require('../../utils/auth');
 const { getDelegationsFromAmount } = require('./ctStake');
@@ -17,21 +21,37 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
     // Add epoch to each allocation
     const epoch = await getCurrentEpoch();
 
-    for (let allocation of allocations) {
+    const isDelegatedTo = await prisma.txStakeDelegation.findFirst({
+      where: { toEthAddress: ethAddress, epoch },
+    });
+
+    // if ethAddress has not been delegated to do not allow them to allocate
+    if (!isDelegatedTo) {
+      res.status(400).send({
+        result: {
+          success: false,
+          error: true,
+          errorCode: NO_DELEGATION_FOUND,
+        },
+      });
+      return;
+    }
+
+    for (const allocation of allocations) {
       allocation.epoch = epoch;
     }
 
     // remove any zero weight allocations or self allocations.
     // All allocations will be deleted in the next DB call
     const allocationsToWrite = allocations.filter(
-      a => a.weight > 0 && a.toEthAddress !== ethAddress
+      (a) => a.weight > 0 && a.toEthAddress !== ethAddress,
     );
 
     // Delete all existing allocations
     await prisma.txValueAllocation.deleteMany({
       where: {
         fromEthAddress: ethAddress,
-        epoch
+        epoch,
       },
     });
 
@@ -42,7 +62,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log('Failed POST /api/txValueAllocation/send: ', err)
+    console.log('Failed POST /api/txValueAllocation/send: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -57,35 +77,35 @@ async function getAllocationsFromAmount(toAddress, epoch) {
     where: {
       toEthAddress: toAddress,
       epoch,
-    }
+    },
   });
 
-  let totalAmount = 0
+  let totalAmount = 0;
   for (let i = 0; i < allocationsFrom.length; i++) {
-    let fromAddress = allocationsFrom[i].fromEthAddress
-    let totalWeight = await prisma.txValueAllocation.aggregate({
+    const fromAddress = allocationsFrom[i].fromEthAddress;
+    const totalWeight = await prisma.txValueAllocation.aggregate({
       where: {
         fromEthAddress: fromAddress,
         epoch,
       },
       sum: {
-        weight: true
-      }
-    })
-    let allocatableAmount = await getDelegationsFromAmount(fromAddress, epoch)
-    totalAmount += allocatableAmount * (allocationsFrom[i].weight / totalWeight.sum.weight)
+        weight: true,
+      },
+    });
+    const allocatableAmount = await getDelegationsFromAmount(fromAddress, epoch);
+    totalAmount += allocatableAmount * (allocationsFrom[i].weight / totalWeight.sum.weight);
   }
 
-  return totalAmount
+  return totalAmount;
 }
 
 router.get('/api/txValueAllocation/to', async (req, res) => {
   try {
     let {
       ethAddress,
-      epoch
+      epoch,
     } = req.query;
-    epoch = Number(epoch)
+    epoch = Number(epoch);
 
     // Allocations to other members from ethAddress
     const allocationsTo = await prisma.txValueAllocation.findMany({
@@ -94,11 +114,11 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
         epoch,
       },
       include: {
-        toTxMember: true
-      }
+        toTxMember: true,
+      },
     });
 
-    const allocationsToAmount = await getDelegationsFromAmount(ethAddress, epoch)
+    const allocationsToAmount = await getDelegationsFromAmount(ethAddress, epoch);
 
     res.send({
       result: {
@@ -108,7 +128,7 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log("Failed GET /api/txValueAllocation/to: ", err)
+    console.log('Failed GET /api/txValueAllocation/to: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -118,16 +138,15 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
   }
 });
 
-
 router.get('/api/txValueAllocation/from', async (req, res) => {
   try {
     let {
       ethAddress,
       skip,
-      epoch
+      epoch,
     } = req.query;
-    skip = Number(skip)
-    epoch = Number(epoch)
+    skip = Number(skip);
+    epoch = Number(epoch);
 
     // Allocations to ethAddress from other members
     const allocationsFrom = await prisma.txValueAllocation.findMany({
@@ -136,13 +155,13 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
         epoch,
       },
       include: {
-        fromTxMember: true
+        fromTxMember: true,
       },
       skip,
       take: PAGINATION_LIMIT,
     });
 
-    const allocationsFromAmount = await getAllocationsFromAmount(ethAddress, epoch)
+    const allocationsFromAmount = await getAllocationsFromAmount(ethAddress, epoch);
 
     res.send({
       result: {
@@ -152,7 +171,7 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log("Failed GET /api/txValueAllocation/from: ", err)
+    console.log('Failed GET /api/txValueAllocation/from: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -164,5 +183,5 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
 
 module.exports = {
   getAllocationsFromAmount,
-  router
+  router,
 };
