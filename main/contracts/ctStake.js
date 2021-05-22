@@ -36,7 +36,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
         transactionType: 'STAKE',
       },
     });
-    if (exists && exists.amount && exists.amount) {
+    if (exists && exists.amount && exists.amount.toNumber()) {
       res.send({
         result: {
           error: true,
@@ -132,7 +132,7 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
       },
     });
 
-    const delegationsToAmount = await prisma.txDntToken.findFirst({
+    const delegationDnt = await prisma.txDntToken.findFirst({
       where: {
         ethAddress,
         createdEpoch: epoch,
@@ -142,9 +142,12 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
       },
     });
 
+    const delegationsToAmount = delegationDnt && delegationDnt.amount
+      ? delegationDnt.amount.toNumber() : 0;
+
     res.send({
       result: {
-        delegationsToAmount: delegationsToAmount ? delegationsToAmount.amount : 0,
+        delegationsToAmount,
         delegationsTo,
         error: false,
       },
@@ -234,7 +237,7 @@ async function getDelegationsFromAmount(toAddress, epoch) {
         updatedAt: 'desc',
       },
     });
-    stakeAmount = stakeAmount ? stakeAmount.amount : 0;
+    stakeAmount = stakeAmount ? stakeAmount.amount.toNumber() : 0;
 
     totalAmount += stakeAmount * (delegationsFrom[i].weight / totalWeight.sum.weight);
   }

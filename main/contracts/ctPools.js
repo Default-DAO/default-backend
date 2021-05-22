@@ -32,7 +32,7 @@ router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
       },
     });
 
-    const epochDepositsAmt = epochDeposits.sum.amount ? epochDeposits.sum.amount : 0;
+    const epochDepositsAmt = epochDeposits.sum.amount ? epochDeposits.sum.amount.toNumber() : 0;
 
     const depositLimit = member.liquidityCapUsdc - epochDepositsAmt - amount;
 
@@ -171,9 +171,9 @@ async function getUsdc() {
     },
   });
   const totalUsdcDepositedAmt = totalUsdcDeposited.sum.amount
-    ? totalUsdcDeposited.sum.amount : 0;
+    ? totalUsdcDeposited.sum.amount.toNumber() : 0;
   const totalUsdcWithdrawnAmt = totalUsdcWithdrawn.sum.amount
-    ? totalUsdcWithdrawn.sum.amount : 0;
+    ? totalUsdcWithdrawn.sum.amount.toNumber() : 0;
   return totalUsdcDepositedAmt - totalUsdcWithdrawnAmt;
 }
 
@@ -189,7 +189,7 @@ async function getDnt() {
       amount: true,
     },
   });
-  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount : 0;
+  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount.toNumber() : 0;
   return totalDntAmt;
 }
 
@@ -202,7 +202,7 @@ async function getDntStaked() {
       amount: true,
     },
   });
-  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount : 0;
+  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount.toNumber() : 0;
 }
 
 router.get('/api/ctPools', async (req, res) => {
@@ -272,8 +272,8 @@ async function getMemberDnt(ethAddress) {
       amount: true,
     },
   });
-  
-  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount : 0;
+
+  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount.toNumber() : 0;
 
   return totalDntAmt;
 }
@@ -289,7 +289,7 @@ async function getMemberDntStaked(ethAddress) {
       amount: true,
     },
   });
-  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount : 0;
+  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount.toNumber() : 0;
 }
 
 // Get pool information for member
