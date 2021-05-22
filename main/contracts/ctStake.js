@@ -1,5 +1,10 @@
 const router = require('express').Router();
-const { BAD_REQUEST, PAGINATION_LIMIT, ALREADY_OCCURRED } = require('../../config/keys');
+const {
+  BAD_REQUEST,
+  PAGINATION_LIMIT,
+  ALREADY_OCCURRED,
+  NO_STAKE_FOUND,
+} = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index');
@@ -73,6 +78,22 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
       ethAddress,
       delegations,
     } = req.body;
+
+    const isStaked = await prisma.txDntToken.findFirst({
+      where: { ethAddress, transactionType: 'STAKE' },
+    });
+
+    // if user is not staked do not allow them to delegate
+    if (!isStaked) {
+      res.status(400).send({
+        result: {
+          success: false,
+          error: true,
+          errorCode: NO_STAKE_FOUND,
+        },
+      });
+      return;
+    }
 
     // Add epoch to each delegation
     const epoch = await getCurrentEpoch();

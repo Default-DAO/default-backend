@@ -152,6 +152,9 @@ async function constructRewardDistributions(epochNumber) {
 
   delegations.forEach((delegation) => {
     const { fromEthAddress, toEthAddress, weight } = delegation;
+    if (!netOwnershipMap[fromEthAddress]) {
+      throw new Error(`${fromEthAddress} has attempted to delegate without staking`);
+    }
     if (!dntRewardDistributions[fromEthAddress]) {
       dntRewardDistributions[fromEthAddress] = _.cloneDeep(
         dntRewardDistributionObj,
