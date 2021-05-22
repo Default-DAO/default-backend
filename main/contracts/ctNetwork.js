@@ -85,8 +85,8 @@ router.get('/api/ctNetwork/network', async (req, res) => {
         (tx) => ({
           ethAddress: tx.txMember.ethAddress,
           alias: tx.txMember.alias,
-          amountDnt: tx.amount ? tx.amount : 0,
-          percentTotal: ((tx.amount ? tx.amount : 0) / totalContribRewards),
+          amountDnt: tx.amount ? tx.amount.toNumber() : 0,
+          percentTotal: ((tx.amount ? tx.amount.toNumber() : 0) / totalContribRewards),
         }),
       );
     }

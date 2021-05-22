@@ -267,7 +267,7 @@ describe('incrementEpoch', () => {
         createdAt: 'desc',
       },
     });
-    expect(contribOneRewards.amount).toBe(expectedContribReward);
+    expect(contribOneRewards.amount.toNumber()).toBe(expectedContribReward);
 
     const contribTwoRewards = await prisma.txDntToken.findFirst({
       where: {
@@ -279,7 +279,7 @@ describe('incrementEpoch', () => {
         createdAt: 'desc',
       },
     });
-    expect(contribTwoRewards.amount).toBe(expectedContribReward);
+    expect(contribTwoRewards.amount.toNumber()).toBe(expectedContribReward);
 
     const lpOneRewards = await prisma.txDntToken.findFirst({
       where: {
@@ -291,7 +291,7 @@ describe('incrementEpoch', () => {
         createdAt: 'desc',
       },
     });
-    expect(lpOneRewards.amount).toBe(expectedLpReward);
+    expect(lpOneRewards.amount.toNumber()).toBe(expectedLpReward);
 
     const lpTwoRewards = await prisma.txDntToken.findFirst({
       where: {
@@ -303,7 +303,7 @@ describe('incrementEpoch', () => {
         createdAt: 'desc',
       },
     });
-    expect(lpTwoRewards.amount).toBe(expectedLpReward);
+    expect(lpTwoRewards.amount.toNumber()).toBe(expectedLpReward);
   });
 
   test('should handle allocations not being made', async () => {
@@ -443,8 +443,8 @@ describe('incrementEpoch', () => {
       sum: { amount: true },
     });
 
-    expect(totalContribTokens.sum.amount).toBe(totalContribDntRewardAmt);
-    expect(totalLpRewards.sum.amount).toBe(totalLpDntRewardAmt);
+    expect(totalContribTokens.sum.amount.toNumber()).toBe(totalContribDntRewardAmt);
+    expect(totalLpRewards.sum.amount.toNumber()).toBe(totalLpDntRewardAmt);
   });
 
   test('should have correct allocations', async () => {
