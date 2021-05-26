@@ -1,95 +1,67 @@
 const router = require('express').Router();
-const { _ } = require('lodash');
-const {
-  getCurrentProtocol,
-  contribRewardPercent,
-  constructRewardDistributions,
-} = require('../../utils/epoch');
+const { getCurrentProtocol } = require('../../utils/epoch');
+
+const { BAD_REQUEST } = require('../../config/keys');
+
+const { checkSumAddress } = require('../../utils/auth');
 
 const { prisma } = require('../../prisma/index');
 
 router.get('/api/ctNetwork/network', async (req, res) => {
   try {
     const epoch = Number(req.query.epoch);
+    const requestorEthAddress = checkSumAddress(req.query.ethAddress);
     const protocol = await prisma.txProtocol.findUnique({
       where: { epochNumber: epoch },
     });
 
     const currentProtocol = await getCurrentProtocol();
+
+    if (epoch === currentProtocol.epoch) {
+      res.status(400).send({ error: true, errorCode: BAD_REQUEST });
+      return;
+    }
     const totalContribRewards = protocol.dntEpochRewardIssuanceAmount / 2;
 
-    let result = [];
-
-    if (protocol.epochNumber === currentProtocol.epochNumber) {
-      // this is the current epoch. since the allocations have not been written
-      // to the DB yet we need to calculate the current state.
-      const dntRewardDistributions = await constructRewardDistributions(
-        protocol.epochNumber,
-      );
-
-      // Remove those without any allocations
-      Object.keys(dntRewardDistributions).map((ethAddress) => {
-        if (_.isEmpty(dntRewardDistributions[ethAddress].allocations)) {
-          delete dntRewardDistributions[ethAddress];
-        }
-      });
-
-      // dntRewardDistributions only contains ethAddresses so we an object
-      // to map aliases to addresses
-      const ethAliasMap = {};
-      const txMembers = await prisma.txMember.findMany({
-        select: { alias: true, ethAddress: true },
-        where: { ethAddress: { in: Object.keys(dntRewardDistributions) } },
-      });
-      txMembers.forEach((txMember) => {
-        ethAliasMap[txMember.ethAddress] = txMember.alias;
-      });
-
-      // using the dntRewardDistributions add up all the current allocations
-      // to each user
-      Object.keys(dntRewardDistributions).forEach((ethAddress) => {
-        const { allocations } = dntRewardDistributions[ethAddress];
-
-        let totalDntAllocated = 0;
-        Object.keys(allocations).forEach((allocatingAddress) => {
-          totalDntAllocated += allocations[allocatingAddress];
-        });
-
-        result.push({
-          ethAddress,
-          alias: ethAliasMap[ethAddress],
-          amountDnt: totalDntAllocated,
-          percentTotal: totalDntAllocated / totalContribRewards,
-        });
-      });
-    } else {
-      // old epoch. The allocation values are already written to the
-      // txDntToken table so just read from the table.
-      const rewardTxs = await prisma.txDntToken.findMany({
-        select: {
-          txMember: {
-            select: {
-              alias: true,
-              ethAddress: true,
-            },
+    const rewardTxs = await prisma.txDntToken.findMany({
+      select: {
+        txMember: {
+          select: {
+            alias: true,
+            ethAddress: true,
           },
-          amount: true,
         },
-        where: {
-          createdEpoch: protocol.epochNumber,
-          transactionType: 'CONTRIBUTOR_REWARD',
-        },
-      });
+        amount: true,
+      },
+      where: {
+        createdEpoch: protocol.epochNumber,
+        transactionType: 'CONTRIBUTOR_REWARD',
+      },
+      orderBy: [{
+        amount: 'desc',
+      }],
+    });
 
-      result = rewardTxs.map(
-        (tx) => ({
-          ethAddress: tx.txMember.ethAddress,
-          alias: tx.txMember.alias,
-          amountDnt: tx.amount ? tx.amount.toNumber() : 0,
-          percentTotal: ((tx.amount ? tx.amount.toNumber() : 0) / totalContribRewards),
-        }),
-      );
-    }
+    let requestorTxMember;
+    const result = rewardTxs.reduce((acc, tx) => {
+      const resultObj = {
+        ethAddress: tx.txMember.ethAddress,
+        alias: tx.txMember.alias,
+        amountDnt: tx.amount ? tx.amount.toNumber() : 0,
+        percentTotal: ((tx.amount ? tx.amount.toNumber() : 0) / totalContribRewards),
+      };
+
+      if (requestorEthAddress === resultObj.ethAddress) {
+        requestorTxMember = resultObj;
+      } else {
+        acc.push(resultObj);
+      }
+
+      return acc;
+    }, []);
+
+    // add requesting eth address to the beginning of the list
+    result.unshift(requestorTxMember);
 
     res.send({ result, error: false });
   } catch (err) {

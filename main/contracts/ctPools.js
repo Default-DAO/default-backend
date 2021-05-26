@@ -4,7 +4,7 @@ const { getCurrentEpoch } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index');
 
-const { authMiddleware } = require('../../utils/auth');
+const { authMiddleware, checkSumAddress } = require('../../utils/auth');
 
 router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
   try {
@@ -313,6 +313,51 @@ router.get('/api/ctPools/member', async (req, res) => {
     });
   } catch (err) {
     console.log('Failed GET /api/ctPools/member: ', err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/ctPools/dnt/stakeHistory', async (req, res) => {
+  try {
+    const ethAddress = checkSumAddress(req.query.ethAddress);
+
+    const result = await prisma.txDntToken.findMany({
+      where: { ethAddress, transactionType: 'STAKE' },
+      orderBy: [{ createdEpoch: 'asc' }],
+    });
+    res.send({ result, error: false });
+    return;
+  } catch (err) {
+    console.log('Failed GET /api/ctPools/dnt/stakeHistory: ', err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
+  try {
+    const result = await prisma.txDntToken.groupBy({
+      by: ['ethAddress'],
+      where: { transactionType: 'STAKE' },
+      sum: {
+        amount: true,
+      },
+      orderBy: [{ _sum: { amount: 'desc' } }],
+      take: 10,
+    });
+    res.send({ result, error: false });
+    return;
+  } catch (err) {
+    console.log('Failed GET /api/ctPools/dnt/stakeRanking: ', err);
     res.status(400).send({
       result: {
         error: true,
