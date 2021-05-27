@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { BAD_REQUEST, OVER_LIMIT } = require('../../config/keys');
+const { BAD_REQUEST, OVER_LIMIT, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index');
@@ -313,6 +313,52 @@ router.get('/api/ctPools/member', async (req, res) => {
     });
   } catch (err) {
     console.log('Failed GET /api/ctPools/member: ', err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/ctPools/member/dntHistory', async (req, res) => {
+  try {
+    const ethAddress = checkSumAddress(req.query.ethAddress);
+    const skip = Number(req.query.skip || 0);
+    const result = await prisma.txDntToken.findMany({
+      where: { ethAddress },
+      orderBy: [{ createdEpoch: 'desc' }, { createdAt: 'desc' }],
+      take: PAGINATION_LIMIT,
+      skip,
+    });
+    res.send({ result, error: false });
+    return;
+  } catch (err) {
+    console.log('Failed GET /api/ctPools/member/dntHistory: ', err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.get('/api/ctPools/member/usdcHistory', async (req, res) => {
+  try {
+    const ethAddress = checkSumAddress(req.query.ethAddress);
+    const skip = Number(req.query.skip || 0);
+    const result = await prisma.txUsdcToken.findMany({
+      where: { ethAddress },
+      orderBy: [{ createdEpoch: 'desc' }, { createdAt: 'desc' }],
+      take: PAGINATION_LIMIT,
+      skip,
+    });
+    res.send({ result, error: false });
+    return;
+  } catch (err) {
+    console.log('Failed GET /api/ctPools/member/usdcHistory: ', err);
     res.status(400).send({
       result: {
         error: true,
