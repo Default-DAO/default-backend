@@ -47,6 +47,9 @@ app.listen(port, () => {
   console.log(`Started default-backend on port: ${port}`);
 });
 
+// WHEN dUSDC CONTRACT IS LIVE
+// pools.subscribeWeb3TransferEvent()
+
 module.exports = {
   app,
 };

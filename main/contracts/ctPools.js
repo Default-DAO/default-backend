@@ -1,12 +1,149 @@
+// Helpful documentations on web3 subscribe
+// https://ethereum.stackexchange.com/questions/12553/understanding-logs-and-log-blooms/12587
+// https://ethereum.stackexchange.com/questions/26621/subscribe-to-all-token-transfers-for-entire-blockchain
+// https://web3js.readthedocs.io/en/v1.2.11/web3.html
 const router = require('express').Router();
 const { BAD_REQUEST, OVER_LIMIT, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
+const Web3 = require('web3');
 
+const { BAD_REQUEST, OVER_LIMIT, PENDING, UNREGISTERED } = require('../../config/keys');
+const { getCurrentEpoch } = require('../../utils/epoch');
 const { prisma } = require('../../prisma/index');
-
 const { authMiddleware, checkSumAddress } = require('../../utils/auth');
 
-router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
+// Check if transaction went through on the blockchain. Receipt returns null if transaction pending
+async function updateLiquidity(hash, amount) {
+  try {
+    let receipt = await web3.eth.getTransactionReceipt(hash)
+    if (!receipt) return PENDING
+
+    let ethAddress = checkSumAddress(receipt.from)
+    console.log('Got transaction receipt from ' + ethAddress);
+
+    const member = await prisma.txMember.findUnique({
+      where: {
+        ethAddress,
+      },
+    });
+    if (!member) return UNREGISTERED
+
+    const epoch = await getCurrentEpoch();
+
+    const epochDeposits = await prisma.txUsdcToken.aggregate({
+      where: {
+        ethAddress,
+        transactionType: 'DEPOSIT',
+        createdEpoch: epoch,
+      },
+      sum: {
+        amount: true,
+      },
+    });
+
+    const epochDepositsAmt = epochDeposits.sum.amount ? epochDeposits.sum.amount.toNumber() : 0;
+
+    const depositLimit = member.liquidityCapUsdc - epochDepositsAmt - amount;
+
+    if (depositLimit >= 0) {
+      await prisma.txUsdcToken.create({
+        data: {
+          ethAddress,
+          createdEpoch: epoch,
+          transactionType: 'DEPOSIT',
+          amount,
+        },
+      });
+    }
+
+    if (depositLimit == 0) {
+      await prisma.txMember.update({
+        where: {
+          ethAddress,
+        },
+        data: {
+          liquidityCapUsdc: 50000,
+        },
+      });
+    }
+  } catch (err) {
+    console.log("Failed updateLiquidity: ", err)
+  }
+}
+
+// USE WHEN dUSDC CONTRACT IS LIVE
+async function subscribeWeb3TransferEvent() {
+  const web3 = new Web3(process.env.NODE_WSS_ADDRESS)
+  web3.eth.subscribe('logs', {
+    fromBlock: 1,
+    //Will be process.env.DEFAULT_CONTRACT_ADDRESS once we launch dUSDC
+    address: process.env.DEFAULT_CONTRACT_ADDRESS,
+    //"topics[0]" is a sha3 hash of Transfer(address,address,uint256), which is a canonical signature of transfer event
+    topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]
+  }, function (error, result) {
+    if (error) {
+      console.log("web3 subscribe error: ", error)
+    }
+  }).on("data", async function (trxData) {
+    function formatAddress(data) {
+      var step1 = web3.utils.hexToBytes(data);
+      for (var i = 0; i < step1.length; i++) if (step1[0] == 0) step1.splice(0, 1);
+      return checkSumAddress(web3.utils.bytesToHex(step1));
+    }
+
+    let contractAddress = trxData.address
+    let amount = web3.utils.hexToNumberString(trxData.data) / Math.pow(10, 6)
+    let from = formatAddress(trxData.topics['1'])
+    let to = formatAddress(trxData.topics['2'])
+    let transactionHash = trxData.transactionHash
+
+    console.log("Register new transfer: " + transactionHash);
+    console.log("Contract " + contractAddress +
+      " has transaction of " + amount +
+      " from " + from + " to " + to);
+
+    await updateLiquidity(trxData.transactionHash, amount)
+  });
+}
+
+// USE BEFORE dUSDC CONTRACT IS LIVE.
+// Pings the blockchain every 10 seconds to check approval for 10 hours
+router.post('/api/ctPools/addLiquidity/checkTransfer', async (req, res) => {
+  try {
+    const {
+      transactionHash,
+      amount,
+    } = req.body;
+
+    //10 hours
+    let intervals = 6 * 60 * 10
+    setInterval(async function () {
+      intervals--
+      await updateLiquidity(transactionHash, amount)
+      if (intervals <= 0) {
+        clearInterval(this)
+      }
+    }, 10 * 1000)
+
+    res.send({
+      result: {
+        error: false, success: true
+      },
+    });
+    return;
+
+  } catch (err) {
+    console.log('Failed POST /api/ctPools/addLiquidity/checkTransfer: ', err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.post('/api/ctPools/addLiquidity/checkLimit', authMiddleware, async (req, res) => {
   try {
     const {
       ethAddress,
@@ -39,38 +176,20 @@ router.post('/api/ctPools/addLiquidity', authMiddleware, async (req, res) => {
     if (depositLimit < 0) {
       res.send({
         result: {
-          error: true,
-          errorCode: OVER_LIMIT,
+          error: true, errorCode: OVER_LIMIT,
+        },
+      });
+      return;
+    } else {
+      res.send({
+        result: {
+          error: false, success: true
         },
       });
       return;
     }
-
-    if (depositLimit >= 0) {
-      await prisma.txUsdcToken.create({
-        data: {
-          ethAddress,
-          createdEpoch: epoch,
-          transactionType: 'DEPOSIT',
-          amount,
-        },
-      });
-    }
-
-    if (depositLimit == 0) {
-      await prisma.txMember.update({
-        where: {
-          ethAddress,
-        },
-        data: {
-          liquidityCapUsdc: 50000,
-        },
-      });
-    }
-
-    res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log('Failed POST /api/ctPools/addLiquidity: ', err);
+    console.log('Failed POST /api/ctPools/addLiquidity/checkLimit: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -421,4 +540,5 @@ module.exports = {
   getMemberUsdc,
   getMemberDnt,
   getMemberDntStaked,
+  subscribeWeb3TransferEvent
 };
