@@ -37,18 +37,25 @@ router.get('/api/ctNetwork/network', async (req, res) => {
         createdEpoch: protocol.epochNumber,
         transactionType: 'CONTRIBUTOR_REWARD',
       },
-      orderBy: [{
-        amount: 'desc',
-      }],
+      orderBy: [{ amount: 'desc' }],
     });
+
+    const totalPointsAgg = await prisma.txDntToken.aggregate({
+      where: { transactionType: 'STAKE' },
+      sum: { amount: true },
+    });
+    const totalPoints = Number(totalPointsAgg.sum.amount);
 
     let requestorTxMember;
     const result = rewardTxs.reduce((acc, tx) => {
+      const percentTotal = Number(tx.amount) / totalContribRewards;
+      const points = percentTotal * totalPoints;
       const resultObj = {
         ethAddress: tx.txMember.ethAddress,
         alias: tx.txMember.alias,
-        amountDnt: tx.amount ? tx.amount.toNumber() : 0,
-        percentTotal: ((tx.amount ? tx.amount.toNumber() : 0) / totalContribRewards),
+        amountDnt: Number(tx.amount),
+        percentTotal,
+        points,
       };
 
       if (requestorEthAddress === resultObj.ethAddress) {
