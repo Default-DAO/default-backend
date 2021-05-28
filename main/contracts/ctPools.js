@@ -510,7 +510,7 @@ router.get('/api/ctPools/dnt/stakeHistory', async (req, res) => {
 
 router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
   try {
-    const result = await prisma.txDntToken.groupBy({
+    const highestStakes = await prisma.txDntToken.groupBy({
       by: ['ethAddress'],
       where: { transactionType: 'STAKE' },
       sum: {
@@ -519,6 +519,18 @@ router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
       orderBy: [{ _sum: { amount: 'desc' } }],
       take: 10,
     });
+    const ethAddresses = highestStakes.map((r) => r.ethAddress);
+    const txMembers = await prisma.txMember.findMany({
+      select: { ethAddress: true, alias: true },
+      where: { ethAddress: { in: ethAddresses } },
+    });
+
+    const aliasMap = txMembers.reduce((acc, txMember) => {
+      acc[txMember.ethAddress] = txMember.alias;
+      return acc;
+    }, {});
+
+    const result = highestStakes.map(((s) => ({ ...s, alias: aliasMap[s.ethAddress] })));
     res.send({ result, error: false });
     return;
   } catch (err) {
