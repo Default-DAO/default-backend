@@ -9,7 +9,8 @@ const { getCurrentEpoch } = require('../../utils/epoch');
 
 const { prisma } = require('../../prisma/index');
 
-const { authMiddleware } = require('../../utils/auth');
+const { authMiddleware, checkSumAddress } = require('../../utils/auth');
+const { round } = require('../../utils/tokenmath');
 const { getMemberDnt, getMemberDntStaked } = require('./ctPools');
 
 router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => {
@@ -136,39 +137,31 @@ router.post('/api/txStakeDelegation/send', authMiddleware, async (req, res) => {
 
 router.get('/api/txStakeDelegation/to', async (req, res) => {
   try {
-    let {
-      ethAddress,
-      epoch,
-    } = req.query;
-    epoch = Number(epoch);
+    const ethAddress = checkSumAddress(req.query.ethAddress);
+    const epoch = Number(req.query.epoch);
+
+    const stakedDnt = await prisma.txDntToken.aggregate({
+      where: { ethAddress, transactionType: 'STAKE' },
+      sum: { amount: true },
+    });
+    const totalStakedDnt = stakedDnt.sum ? Number(stakedDnt.sum.amount) : 0;
 
     // Delegations to other members from ethAddress
-    const delegationsTo = await prisma.txStakeDelegation.findMany({
-      where: {
-        fromEthAddress: ethAddress,
-        epoch,
-      },
-      include: {
-        toTxMember: true,
-      },
+    const delegations = await prisma.txStakeDelegation.findMany({
+      where: { fromEthAddress: ethAddress, epoch },
+      include: { toTxMember: true },
     });
 
-    const delegationDnt = await prisma.txDntToken.findFirst({
-      where: {
-        ethAddress,
-        createdEpoch: epoch,
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-    });
+    const totalWeight = delegations.reduce((acc, del) => acc + del.weight, 0);
 
-    const delegationsToAmount = delegationDnt && delegationDnt.amount
-      ? delegationDnt.amount.toNumber() : 0;
+    const delegationsTo = delegations.map((del) => (
+      { ...del, votes: (del.weight / totalWeight) * totalStakedDnt }
+    ));
 
     res.send({
       result: {
-        delegationsToAmount,
+        totalVotes: totalStakedDnt,
+        delegationsToAmount: totalStakedDnt,
         delegationsTo,
         error: false,
       },
@@ -186,32 +179,56 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
 
 router.get('/api/txStakeDelegation/from', async (req, res) => {
   try {
-    let {
-      ethAddress,
-      skip,
-      epoch,
-    } = req.query;
-    skip = Number(skip);
-    epoch = Number(epoch);
+    const ethAddress = checkSumAddress(req.query.ethAddress);
+    const skip = Number(req.query.skip || 0);
+    const epoch = Number(req.query.epoch);
 
     // Delegations to ethAddress from other members
-    const delegationsFrom = await prisma.txStakeDelegation.findMany({
-      where: {
-        toEthAddress: ethAddress,
-        epoch,
-      },
-      include: {
-        fromTxMember: true,
-      },
+    const delegations = await prisma.txStakeDelegation.findMany({
+      where: { toEthAddress: ethAddress, epoch },
+      include: { fromTxMember: true },
       skip,
       take: PAGINATION_LIMIT,
     });
 
-    const delegationsFromAmount = await getDelegationsFromAmount(ethAddress, epoch);
+    // calculate total weights delegated so far
+    const totalWeightAgg = await prisma.txStakeDelegation.groupBy({
+      where: { epoch },
+      by: ['fromEthAddress'],
+      sum: { weight: true },
+    });
+    const totalWeightMap = totalWeightAgg.reduce((acc, del) => {
+      acc[del.fromEthAddress] = del.sum ? del.sum.weight : 0;
+      return acc;
+    }, {});
+
+    // calculate total dnt staked to calculate votes
+    const totalStakedDntAgg = await prisma.txDntToken.groupBy({
+      where: { transactionType: 'STAKE' },
+      by: ['ethAddress'],
+      sum: { amount: true },
+    });
+    const totalStakedDntMap = totalStakedDntAgg.reduce((acc, stake) => {
+      const stakeAmount = stake.sum ? Number(stake.sum.amount) : 0;
+      acc[stake.ethAddress] = stakeAmount;
+      return acc;
+    }, {});
+
+    // add vote details to delegationsFrom list and calculate totalVotes
+    let totalVotes = 0;
+    const delegationsFrom = delegations.map((del) => {
+      const weightPercentage = del.weight / totalWeightMap[del.fromEthAddress];
+      const votes = round(
+        weightPercentage * totalStakedDntMap[del.fromEthAddress],
+      );
+      totalVotes += votes;
+      return { ...del, votes };
+    });
 
     res.send({
       result: {
-        delegationsFromAmount,
+        totalVotes,
+        delegationsFromAmount: totalVotes,
         delegationsFrom,
         error: false,
       },
