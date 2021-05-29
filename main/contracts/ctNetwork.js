@@ -41,7 +41,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
     });
 
     const totalPointsAgg = await prisma.txDntToken.aggregate({
-      where: { transactionType: 'STAKE' },
+      where: { transactionType: 'STAKE', createdEpoch: { lte: epoch } },
       sum: { amount: true },
     });
     const totalPoints = Number(totalPointsAgg.sum.amount);
