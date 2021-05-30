@@ -3,11 +3,9 @@
 // https://ethereum.stackexchange.com/questions/26621/subscribe-to-all-token-transfers-for-entire-blockchain
 // https://web3js.readthedocs.io/en/v1.2.11/web3.html
 const router = require('express').Router();
-const { BAD_REQUEST, OVER_LIMIT, PAGINATION_LIMIT } = require('../../config/keys');
-const { getCurrentEpoch } = require('../../utils/epoch');
 const Web3 = require('web3');
 
-const { BAD_REQUEST, OVER_LIMIT, PENDING, UNREGISTERED } = require('../../config/keys');
+const { BAD_REQUEST, OVER_LIMIT, PENDING, UNREGISTERED, PAGINATION_LIMIT } = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 const { prisma } = require('../../prisma/index');
 const { authMiddleware, checkSumAddress } = require('../../utils/auth');
@@ -271,19 +269,25 @@ router.post('api/ctPools/swapTokens', authMiddleware, async (req, res) => {
   }
 });
 
-async function getUsdc() {
+async function getUsdc(epoch) {
   // Usdc
   const totalUsdcDeposited = await prisma.txUsdcToken.aggregate({
-    where: {
+    where: epoch == undefined ? {
       transactionType: 'DEPOSIT',
+    } : {
+      transactionType: 'DEPOSIT',
+      createdEpoch: epoch
     },
     sum: {
       amount: true,
     },
   });
   const totalUsdcWithdrawn = await prisma.txUsdcToken.aggregate({
-    where: {
+    where: epoch == undefined ? {
       transactionType: 'WITHDRAW',
+    } : {
+      transactionType: 'WITHDRAW',
+      createdEpoch: epoch
     },
     sum: {
       amount: true,
@@ -296,13 +300,19 @@ async function getUsdc() {
   return totalUsdcDepositedAmt - totalUsdcWithdrawnAmt;
 }
 
-async function getDnt() {
+async function getDnt(epoch) {
   const totalDnt = await prisma.txDntToken.aggregate({
-    where: {
+    where: epoch == undefined ? {
       OR: [
         { transactionType: 'CONTRIBUTOR_REWARD' },
         { transactionType: 'LP_REWARD' },
       ],
+    } : {
+      OR: [
+        { transactionType: 'CONTRIBUTOR_REWARD' },
+        { transactionType: 'LP_REWARD' },
+      ],
+      createdEpoch: epoch
     },
     sum: {
       amount: true,
@@ -312,10 +322,13 @@ async function getDnt() {
   return totalDntAmt;
 }
 
-async function getDntStaked() {
+async function getDntStaked(epoch) {
   const totalDntStaked = await prisma.txDntToken.aggregate({
-    where: {
+    where: epoch == undefined ? {
       transactionType: 'STAKE',
+    } : {
+      transactionType: 'STAKE',
+      createdEpoch: epoch
     },
     sum: {
       amount: true,
@@ -326,9 +339,15 @@ async function getDntStaked() {
 
 router.get('/api/ctPools', async (req, res) => {
   try {
-    const usdc = await getUsdc();
-    const dnt = await getDnt();
-    const dntStaked = await getDntStaked();
+    let {
+      epoch,
+    } = req.query;
+    epoch = epoch != undefined ? Number(epoch) : undefined
+
+    //if epoch is not provided, get all epochs
+    const usdc = await getUsdc(epoch);
+    const dnt = await getDnt(epoch);
+    const dntStaked = await getDntStaked(epoch);
 
     res.send({
       result: {
@@ -490,10 +509,12 @@ router.get('/api/ctPools/member/usdcHistory', async (req, res) => {
 router.get('/api/ctPools/dnt/stakeHistory', async (req, res) => {
   try {
     const ethAddress = checkSumAddress(req.query.ethAddress);
-
+    const skip = Number(req.query.skip || 0);
     const result = await prisma.txDntToken.findMany({
       where: { ethAddress, transactionType: 'STAKE' },
       orderBy: [{ createdEpoch: 'asc' }],
+      take: PAGINATION_LIMIT,
+      skip,
     });
     res.send({ result, error: false });
     return;
