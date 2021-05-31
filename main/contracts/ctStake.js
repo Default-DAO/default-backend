@@ -144,7 +144,7 @@ router.get('/api/txStakeDelegation/to', async (req, res) => {
       where: { ethAddress, transactionType: 'STAKE' },
       sum: { amount: true },
     });
-    const totalStakedDnt = stakedDnt.sum ? Number(stakedDnt.sum.amount) : 0;
+    const totalStakedDnt = stakedDnt.sum ? Math.abs(Number(stakedDnt.sum.amount)) : 0;
 
     // Delegations to other members from ethAddress
     const delegations = await prisma.txStakeDelegation.findMany({
@@ -209,7 +209,7 @@ router.get('/api/txStakeDelegation/from', async (req, res) => {
       sum: { amount: true },
     });
     const totalStakedDntMap = totalStakedDntAgg.reduce((acc, stake) => {
-      const stakeAmount = stake.sum ? Number(stake.sum.amount) : 0;
+      const stakeAmount = stake.sum ? Math.abs(Number(stake.sum.amount)) : 0;
       acc[stake.ethAddress] = stakeAmount;
       return acc;
     }, {});
