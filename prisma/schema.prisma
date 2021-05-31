@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["orderByAggregateGroup"]
 }
 
 datasource db {
@@ -11,10 +12,10 @@ datasource db {
 model ApiMember {
   id                 Int      @id @default(autoincrement()) @map("id")
   ethAddress         String   @unique @db.VarChar(42) @map("eth_address")
-  totalLiquidity     Float?   @map("total_liquidity")
-  totalRewardsEarned Float?   @map("total_rewards_earned")
-  netGain            Float?   @map("net_gain")
-  netPosition        Float?   @map("net_position")
+  totalLiquidity     Decimal? @map("total_liquidity") @db.Decimal(20, 8)
+  totalRewardsEarned Decimal? @map("total_rewards_earned") @db.Decimal(20, 8)
+  netGain            Decimal? @map("net_gain") @db.Decimal(20, 8)
+  netPosition        Decimal? @map("net_position") @db.Decimal(20, 8)
   claimed            Boolean  @default(false) @map("claimed")
   cap                Int?     @map("cap")
   nonce              String   @default(uuid()) @map("nonce")
@@ -56,7 +57,7 @@ model TxDntToken {
   ethAddress      String             @db.VarChar(42) @map("eth_address")
   createdEpoch    Int                @map("created_epoch")
   transactionType DntTransactionType @map("transaction_type")
-  amount          Float              @map("amount")
+  amount          Decimal            @map("amount") @db.Decimal(20, 8)
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
@@ -110,7 +111,7 @@ model TxUsdcToken {
   ethAddress      String              @db.VarChar(42) @map("eth_address")
   createdEpoch    Int                 @map("created_epoch")
   transactionType UsdcTransactionType @map("transaction_type")
-  amount          Float               @map("amount")
+  amount          Decimal             @map("amount") @db.Decimal(20, 8)
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 

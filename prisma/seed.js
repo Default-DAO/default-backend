@@ -7,15 +7,17 @@ const { allocateValue } = require('./seed/value');
 const { delegateStake } = require('./seed/stake');
 const { protocol } = require('./seed/protocol');
 const { transactDnt, transactUsdc } = require('./seed/tokens');
+const replay = require('./seed/replay');
 
 async function main() {
-  await protocol();
-  await txMember();
-  await apiMember();
-  await transactDnt();
-  await transactUsdc();
-  await allocateValue();
-  await delegateStake();
+  // await protocol();
+  // await txMember();
+  // await apiMember();
+  // await transactDnt();
+  // await transactUsdc();
+  // await allocateValue();
+  // await delegateStake();
+  await replay();
 }
 
 main().then(() => {
