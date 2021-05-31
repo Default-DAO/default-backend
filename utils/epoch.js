@@ -123,6 +123,7 @@ async function constructRewardDistributions(epochNumber) {
     where: { transactionType: 'STAKE' },
     sum: { amount: true },
   });
+  const totalDntStakedAbs = Math.abs(Number(totalDntStaked.sum.amount));
 
   // Get amount of dnt staked by each delegator
   const dntStakes = await prisma.txDntToken.groupBy({
@@ -137,9 +138,10 @@ async function constructRewardDistributions(epochNumber) {
   const netOwnershipMap = {};
   dntStakes.forEach((dntStake) => {
     const { ethAddress, sum } = dntStake;
+    const absoluteSum = Math.abs(Number(sum.amount));
     netOwnershipMap[ethAddress] = {
-      totalStakedDnt: sum.amount,
-      totalOwnershipPercent: sum.amount / totalDntStaked.sum.amount,
+      totalStakedDnt: absoluteSum,
+      totalOwnershipPercent: absoluteSum / totalDntStakedAbs,
     };
   });
 
@@ -201,7 +203,7 @@ async function constructRewardDistributions(epochNumber) {
     // (percentage total ownership fromEthAddress has of all delegated dnt)
     // * (percentage allocated of staked dnt from fromEthAddress to toEthAddress)
     // * (newly minted DNT available for contributor rewards)
-    const totalDntAllocated = (trustMap[fromEthAddress] / totalDntStaked.sum.amount)
+    const totalDntAllocated = (trustMap[fromEthAddress] / totalDntStakedAbs)
       * percentageAllocated
       * contributorIssuanceDntAmt;
 
