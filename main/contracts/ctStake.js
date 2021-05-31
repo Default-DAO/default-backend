@@ -42,7 +42,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
         transactionType: 'STAKE',
       },
     });
-    if (exists && exists.amount && exists.amount.toNumber()) {
+    if (exists && exists.amount && Math.abs(Number(exists.amount))) {
       res.send({
         result: {
           error: true,
@@ -55,7 +55,7 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
     const stake = await prisma.txDntToken.create({
       data: {
         ethAddress,
-        amount,
+        amount: -Math.abs(Number(amount)),
         createdEpoch,
         transactionType: 'STAKE',
       },
