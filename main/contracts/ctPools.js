@@ -5,7 +5,9 @@
 const router = require('express').Router();
 const Web3 = require('web3');
 
-const { BAD_REQUEST, OVER_LIMIT, PENDING, UNREGISTERED, PAGINATION_LIMIT } = require('../../config/keys');
+const {
+  BAD_REQUEST, OVER_LIMIT, PENDING, UNREGISTERED, PAGINATION_LIMIT,
+} = require('../../config/keys');
 const { getCurrentEpoch } = require('../../utils/epoch');
 const { prisma } = require('../../prisma/index');
 const { authMiddleware, checkSumAddress } = require('../../utils/auth');
@@ -13,18 +15,18 @@ const { authMiddleware, checkSumAddress } = require('../../utils/auth');
 // Check if transaction went through on the blockchain. Receipt returns null if transaction pending
 async function updateLiquidity(hash, amount) {
   try {
-    let receipt = await web3.eth.getTransactionReceipt(hash)
-    if (!receipt) return PENDING
+    const receipt = await web3.eth.getTransactionReceipt(hash);
+    if (!receipt) return PENDING;
 
-    let ethAddress = checkSumAddress(receipt.from)
-    console.log('Got transaction receipt from ' + ethAddress);
+    const ethAddress = checkSumAddress(receipt.from);
+    console.log(`Got transaction receipt from ${ethAddress}`);
 
     const member = await prisma.txMember.findUnique({
       where: {
         ethAddress,
       },
     });
-    if (!member) return UNREGISTERED
+    if (!member) return UNREGISTERED;
 
     const epoch = await getCurrentEpoch();
 
@@ -65,42 +67,42 @@ async function updateLiquidity(hash, amount) {
       });
     }
   } catch (err) {
-    console.log("Failed updateLiquidity: ", err)
+    console.log('Failed updateLiquidity: ', err);
   }
 }
 
 // USE WHEN dUSDC CONTRACT IS LIVE
 async function subscribeWeb3TransferEvent() {
-  const web3 = new Web3(process.env.NODE_WSS_ADDRESS)
+  const web3 = new Web3(process.env.NODE_WSS_ADDRESS);
   web3.eth.subscribe('logs', {
     fromBlock: 1,
-    //Will be process.env.DEFAULT_CONTRACT_ADDRESS once we launch dUSDC
+    // Will be process.env.DEFAULT_CONTRACT_ADDRESS once we launch dUSDC
     address: process.env.DEFAULT_CONTRACT_ADDRESS,
-    //"topics[0]" is a sha3 hash of Transfer(address,address,uint256), which is a canonical signature of transfer event
-    topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]
-  }, function (error, result) {
+    // "topics[0]" is a sha3 hash of Transfer(address,address,uint256), which is a canonical signature of transfer event
+    topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
+  }, (error, result) => {
     if (error) {
-      console.log("web3 subscribe error: ", error)
+      console.log('web3 subscribe error: ', error);
     }
-  }).on("data", async function (trxData) {
+  }).on('data', async (trxData) => {
     function formatAddress(data) {
-      var step1 = web3.utils.hexToBytes(data);
-      for (var i = 0; i < step1.length; i++) if (step1[0] == 0) step1.splice(0, 1);
+      const step1 = web3.utils.hexToBytes(data);
+      for (let i = 0; i < step1.length; i++) if (step1[0] == 0) step1.splice(0, 1);
       return checkSumAddress(web3.utils.bytesToHex(step1));
     }
 
-    let contractAddress = trxData.address
-    let amount = web3.utils.hexToNumberString(trxData.data) / Math.pow(10, 6)
-    let from = formatAddress(trxData.topics['1'])
-    let to = formatAddress(trxData.topics['2'])
-    let transactionHash = trxData.transactionHash
+    const contractAddress = trxData.address;
+    const amount = web3.utils.hexToNumberString(trxData.data) / Math.pow(10, 6);
+    const from = formatAddress(trxData.topics['1']);
+    const to = formatAddress(trxData.topics['2']);
+    const { transactionHash } = trxData;
 
-    console.log("Register new transfer: " + transactionHash);
-    console.log("Contract " + contractAddress +
-      " has transaction of " + amount +
-      " from " + from + " to " + to);
+    console.log(`Register new transfer: ${transactionHash}`);
+    console.log(`Contract ${contractAddress
+    } has transaction of ${amount
+    } from ${from} to ${to}`);
 
-    await updateLiquidity(trxData.transactionHash, amount)
+    await updateLiquidity(trxData.transactionHash, amount);
   });
 }
 
@@ -113,23 +115,22 @@ router.post('/api/ctPools/addLiquidity/checkTransfer', async (req, res) => {
       amount,
     } = req.body;
 
-    //10 hours
-    let intervals = 6 * 60 * 10
+    // 10 hours
+    let intervals = 6 * 60 * 10;
     setInterval(async function () {
-      intervals--
-      await updateLiquidity(transactionHash, amount)
+      intervals--;
+      await updateLiquidity(transactionHash, amount);
       if (intervals <= 0) {
-        clearInterval(this)
+        clearInterval(this);
       }
-    }, 10 * 1000)
+    }, 10 * 1000);
 
     res.send({
       result: {
-        error: false, success: true
+        error: false, success: true,
       },
     });
     return;
-
   } catch (err) {
     console.log('Failed POST /api/ctPools/addLiquidity/checkTransfer: ', err);
     res.status(400).send({
@@ -178,14 +179,13 @@ router.post('/api/ctPools/addLiquidity/checkLimit', authMiddleware, async (req, 
         },
       });
       return;
-    } else {
-      res.send({
-        result: {
-          error: false, success: true
-        },
-      });
-      return;
     }
+    res.send({
+      result: {
+        error: false, success: true,
+      },
+    });
+    return;
   } catch (err) {
     console.log('Failed POST /api/ctPools/addLiquidity/checkLimit: ', err);
     res.status(400).send({
@@ -276,7 +276,7 @@ async function getUsdc(epoch) {
       transactionType: 'DEPOSIT',
     } : {
       transactionType: 'DEPOSIT',
-      createdEpoch: epoch
+      createdEpoch: epoch,
     },
     sum: {
       amount: true,
@@ -287,7 +287,7 @@ async function getUsdc(epoch) {
       transactionType: 'WITHDRAW',
     } : {
       transactionType: 'WITHDRAW',
-      createdEpoch: epoch
+      createdEpoch: epoch,
     },
     sum: {
       amount: true,
@@ -301,24 +301,12 @@ async function getUsdc(epoch) {
 }
 
 async function getDnt(epoch) {
+  const where = epoch === undefined ? undefined : { createdEpoch: epoch };
   const totalDnt = await prisma.txDntToken.aggregate({
-    where: epoch == undefined ? {
-      OR: [
-        { transactionType: 'CONTRIBUTOR_REWARD' },
-        { transactionType: 'LP_REWARD' },
-      ],
-    } : {
-      OR: [
-        { transactionType: 'CONTRIBUTOR_REWARD' },
-        { transactionType: 'LP_REWARD' },
-      ],
-      createdEpoch: epoch
-    },
-    sum: {
-      amount: true,
-    },
+    where,
+    sum: { amount: true },
   });
-  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount.toNumber() : 0;
+  const totalDntAmt = totalDnt.sum ? Number(totalDnt.sum.amount) : 0;
   return totalDntAmt;
 }
 
@@ -328,13 +316,13 @@ async function getDntStaked(epoch) {
       transactionType: 'STAKE',
     } : {
       transactionType: 'STAKE',
-      createdEpoch: epoch
+      createdEpoch: epoch,
     },
     sum: {
       amount: true,
     },
   });
-  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount.toNumber() : 0;
+  return totalDntStaked.sum ? Math.abs(Number(totalDntStaked.sum.amount)) : 0;
 }
 
 router.get('/api/ctPools', async (req, res) => {
@@ -342,9 +330,9 @@ router.get('/api/ctPools', async (req, res) => {
     let {
       epoch,
     } = req.query;
-    epoch = epoch != undefined ? Number(epoch) : undefined
+    epoch = epoch != undefined ? Number(epoch) : undefined;
 
-    //if epoch is not provided, get all epochs
+    // if epoch is not provided, get all epochs
     const usdc = await getUsdc(epoch);
     const dnt = await getDnt(epoch);
     const dntStaked = await getDntStaked(epoch);
@@ -399,19 +387,11 @@ async function getMemberUsdc(ethAddress) {
 async function getMemberDnt(ethAddress) {
   // Dnt
   const totalDnt = await prisma.txDntToken.aggregate({
-    where: {
-      OR: [
-        { transactionType: 'CONTRIBUTOR_REWARD' },
-        { transactionType: 'LP_REWARD' },
-      ],
-      ethAddress,
-    },
-    sum: {
-      amount: true,
-    },
+    where: { ethAddress },
+    sum: { amount: true },
   });
 
-  const totalDntAmt = totalDnt.sum.amount ? totalDnt.sum.amount.toNumber() : 0;
+  const totalDntAmt = totalDnt.sum ? Number(totalDnt.sum.amount) : 0;
 
   return totalDntAmt;
 }
@@ -427,7 +407,7 @@ async function getMemberDntStaked(ethAddress) {
       amount: true,
     },
   });
-  return totalDntStaked.sum.amount ? totalDntStaked.sum.amount.toNumber() : 0;
+  return totalDntStaked.sum ? Math.abs(Number(totalDntStaked.sum.amount)) : 0;
 }
 
 // Get pool information for member
@@ -512,7 +492,7 @@ router.get('/api/ctPools/dnt/stakeHistory', async (req, res) => {
     const skip = Number(req.query.skip || 0);
     const result = await prisma.txDntToken.findMany({
       where: { ethAddress, transactionType: 'STAKE' },
-      orderBy: [{ createdEpoch: 'asc' }],
+      orderBy: [{ createdEpoch: 'asc' }, { createdAt: 'desc' }],
       take: PAGINATION_LIMIT,
       skip,
     });
@@ -537,7 +517,7 @@ router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
       sum: {
         amount: true,
       },
-      orderBy: [{ _sum: { amount: 'desc' } }],
+      orderBy: [{ _sum: { amount: 'asc' } }],
       take: 10,
     });
     const ethAddresses = highestStakes.map((r) => r.ethAddress);
@@ -551,7 +531,13 @@ router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
       return acc;
     }, {});
 
-    const result = highestStakes.map(((s) => ({ ...s, alias: aliasMap[s.ethAddress] })));
+    const result = highestStakes.map(((s) => (
+      {
+        ...s,
+        alias: aliasMap[s.ethAddress],
+        sum: { amount: Math.abs(Number(s.sum.amount)) },
+      }
+    )));
     res.send({ result, error: false });
     return;
   } catch (err) {
@@ -573,5 +559,5 @@ module.exports = {
   getMemberUsdc,
   getMemberDnt,
   getMemberDntStaked,
-  subscribeWeb3TransferEvent
+  subscribeWeb3TransferEvent,
 };

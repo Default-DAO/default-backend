@@ -44,7 +44,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
       where: { transactionType: 'STAKE', createdEpoch: { lte: epoch } },
       sum: { amount: true },
     });
-    const totalPoints = Number(totalPointsAgg.sum.amount);
+    const totalPoints = Math.abs(Number(totalPointsAgg.sum.amount));
 
     let requestorTxMember;
     const result = rewardTxs.reduce((acc, tx) => {
@@ -53,7 +53,7 @@ router.get('/api/ctNetwork/network', async (req, res) => {
       const resultObj = {
         ethAddress: tx.txMember.ethAddress,
         alias: tx.txMember.alias,
-        amountDnt: Number(tx.amount),
+        amountDnt: Math.abs(Number(tx.amount)),
         percentTotal,
         points,
       };
