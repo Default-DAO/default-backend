@@ -134,7 +134,7 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
       sum: { amount: true },
     });
     const totalDntStakedMap = totalStakeAmts.reduce((acc, stake) => {
-      acc[stake.ethAddress] = Number(stake.sum.amount);
+      acc[stake.ethAddress] = Math.abs(Number(stake.sum.amount));
       return acc;
     }, {});
 
@@ -221,7 +221,7 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
       sum: { amount: true },
     });
     const totalStakedDntMap = totalStakedDnt.reduce((acc, dntStake) => {
-      acc[dntStake.ethAddress] = Number(dntStake.sum.amount);
+      acc[dntStake.ethAddress] = Math.abs(Number(dntStake.sum.amount));
       return acc;
     }, {});
 
