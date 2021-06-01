@@ -8,14 +8,20 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
     let {
       skip,
       excludeEthAddress,
+      searchText
     } = req.query;
     skip = Number(skip)
+    searchText = searchText ? searchText : ''
 
     // get all claimed members that are not excludeEthAddress. 
     // if excludeEthAddress is null this will just return all 
     // claimed members
     const members = await prisma.txMember.findMany({
       where: {
+        alias: {
+          contains: searchText
+        },
+        type: "PERSONAL",        
         ethAddress: {not: excludeEthAddress},
         apiMember: { claimed: true},
       },
@@ -30,6 +36,7 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
       },
     });
   } catch (err) {
+    console.log("Failed /api/ctMember/getMembers: ", err)
     res.status(400).send(err);
   }
 }),
