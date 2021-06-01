@@ -35,23 +35,6 @@ router.post('/api/txStakeDelegation/stake', authMiddleware, async (req, res) => 
     // Add epoch to each delegation
     const createdEpoch = await getCurrentEpoch();
 
-    const exists = await prisma.txDntToken.findFirst({
-      where: {
-        ethAddress,
-        createdEpoch,
-        transactionType: 'STAKE',
-      },
-    });
-    if (exists && exists.amount && Math.abs(Number(exists.amount))) {
-      res.send({
-        result: {
-          error: true,
-          errorCode: ALREADY_OCCURRED,
-        },
-      });
-      return;
-    }
-
     const stake = await prisma.txDntToken.create({
       data: {
         ethAddress,
