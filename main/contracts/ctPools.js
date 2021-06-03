@@ -513,7 +513,7 @@ router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
   try {
     const highestStakes = await prisma.txDntToken.groupBy({
       by: ['ethAddress'],
-      where: { transactionType: 'STAKE' },
+      where: { transactionType: 'STAKE', txMember: { type: 'PERSONAL' } },
       sum: {
         amount: true,
       },
