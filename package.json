@@ -7,7 +7,7 @@
     "test": "docker-compose up --build --abort-on-container-exit --force-recreate --renew-anon-volumes",
     "containertest": "jest -i",
     "prod": "pm2-runtime start ecosystem.config.js --env production",
-    "preprod": "npx prisma generate && npx prisma migrate deploy && ./node_modules/pm2/bin/pm2 update",
+    "preprod": "npx prisma generate && ./node_modules/pm2/bin/pm2 update",
     "postprod": "node ./node_modules/pm2/bin/pm2 logs",
     "stop": "./node_modules/pm2/bin/pm2 stop all",
     "migrate": "npx prisma migrate deploy",
