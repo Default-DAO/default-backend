@@ -1,29 +1,30 @@
 const router = require('express').Router();
 const { PAGINATION_LIMIT } = require('../../config/keys');
 
-const { prisma } = require('../../prisma/index')
+const { prisma } = require('../../prisma/index');
 
 router.get('/api/ctMember/getMembers', async (req, res) => {
   try {
     let {
       skip,
       excludeEthAddress,
-      searchText
+      searchText,
     } = req.query;
-    skip = Number(skip)
-    searchText = searchText ? searchText : ''
+    skip = Number(skip);
+    searchText = searchText || '';
 
-    // get all claimed members that are not excludeEthAddress. 
-    // if excludeEthAddress is null this will just return all 
+    // get all claimed members that are not excludeEthAddress.
+    // if excludeEthAddress is null this will just return all
     // claimed members
     const members = await prisma.txMember.findMany({
       where: {
         alias: {
-          contains: searchText
+          contains: searchText,
+          mode: 'insensitive',
         },
-        type: "PERSONAL",        
-        ethAddress: {not: excludeEthAddress},
-        apiMember: { claimed: true},
+        type: 'PERSONAL',
+        ethAddress: { not: excludeEthAddress },
+        apiMember: { claimed: true },
       },
       skip,
       take: PAGINATION_LIMIT,
@@ -36,7 +37,7 @@ router.get('/api/ctMember/getMembers', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log("Failed /api/ctMember/getMembers: ", err)
+    console.log('Failed /api/ctMember/getMembers: ', err);
     res.status(400).send(err);
   }
 }),
@@ -66,4 +67,4 @@ router.get('/api/ctMember/getMember', async (req, res) => {
   }
 }),
 
-module.exports = {router};
+module.exports = { router };
