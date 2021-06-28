@@ -17,46 +17,46 @@ let UsdcTransactionTypes = {
 }
 
 async function transactDnt() {
-  await prisma.txDntToken.create({
+  await prisma.txDaoToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 1, 
+      epoch: 1, 
       transactionType: DntTransactionTypes.CONTRIBUTOR_REWARD,
       amount: 500000, 
     }
   })
 
-  await prisma.txDntToken.create({
+  await prisma.txDaoToken.create({
     data: {
       ethAddress: members.zaz.ethAddress,
-      createdEpoch: 1, 
+      epoch: 1, 
       transactionType: DntTransactionTypes.LP_REWARD,
       amount: 500000, 
     }
   })
 
-  await prisma.txDntToken.create({
+  await prisma.txDaoToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 2, 
+      epoch: 2, 
       transactionType: DntTransactionTypes.SWAP,
       amount: 100000, 
     }
   })
 
-  await prisma.txDntToken.create({
+  await prisma.txDaoToken.create({
     data: {
       ethAddress: members.zaz.ethAddress,
-      createdEpoch: 2,
+      epoch: 2,
       transactionType: DntTransactionTypes.STAKE,
       amount: 200000, 
     }
   })
 
-  await prisma.txDntToken.create({
+  await prisma.txDaoToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 3,
+      epoch: 3,
       transactionType: DntTransactionTypes.STAKE,
       amount: 300000, 
     }
@@ -64,56 +64,56 @@ async function transactDnt() {
 }
 
 async function transactUsdc() {
-  await prisma.txUsdcToken.create({
+  await prisma.txLiquidityToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 1, 
+      epoch: 1, 
       transactionType: UsdcTransactionTypes.DEPOSIT,
       amount: 100000, 
     }
   })
 
-  await prisma.txUsdcToken.create({
+  await prisma.txLiquidityToken.create({
     data: {
       ethAddress: members.soma.ethAddress,
-      createdEpoch: 2, 
+      epoch: 2, 
       transactionType: UsdcTransactionTypes.DEPOSIT,
       amount: 50000, 
     }
   })
 
-  await prisma.txUsdcToken.create({
+  await prisma.txLiquidityToken.create({
     data: {
       ethAddress: members.fullyallocated.ethAddress,
-      createdEpoch: 2, 
+      epoch: 2, 
       transactionType: UsdcTransactionTypes.DEPOSIT,
       amount: 15000, 
     }
   })
 
-  await prisma.txUsdcToken.create({
+  await prisma.txLiquidityToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 3, 
+      epoch: 3, 
       transactionType: UsdcTransactionTypes.DEPOSIT,
       amount: 5000, 
     }
   })
   
 
-  await prisma.txUsdcToken.create({
+  await prisma.txLiquidityToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 2, 
+      epoch: 2, 
       transactionType: UsdcTransactionTypes.SWAP,
       amount: 5000, 
     }
   })
 
-  await prisma.txUsdcToken.create({
+  await prisma.txLiquidityToken.create({
     data: {
       ethAddress: members.scottsgc.ethAddress,
-      createdEpoch: 3,
+      epoch: 3,
       transactionType: UsdcTransactionTypes.WITHDRAW,
       amount: 5000, 
     }

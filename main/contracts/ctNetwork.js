@@ -11,8 +11,8 @@ router.get('/api/ctNetwork/network', async (req, res) => {
   try {
     const epoch = Number(req.query.epoch);
     const requestorEthAddress = checkSumAddress(req.query.ethAddress);
-    const protocol = await prisma.txProtocol.findUnique({
-      where: { epochNumber: epoch },
+    const protocol = await prisma.txDao.findUnique({
+      where: { epoch: epoch },
     });
 
     const currentProtocol = await getCurrentProtocol();
@@ -21,9 +21,9 @@ router.get('/api/ctNetwork/network', async (req, res) => {
       res.status(400).send({ error: true, errorCode: BAD_REQUEST });
       return;
     }
-    const totalContribRewards = protocol.dntEpochRewardIssuanceAmount / 2;
+    const totalContribRewards = protocol.dtIssuanceAmount / 2;
 
-    const rewardTxs = await prisma.txDntToken.findMany({
+    const rewardTxs = await prisma.txDaoToken.findMany({
       select: {
         txMember: {
           select: {
@@ -34,14 +34,14 @@ router.get('/api/ctNetwork/network', async (req, res) => {
         amount: true,
       },
       where: {
-        createdEpoch: protocol.epochNumber,
+        epoch: protocol.epoch,
         transactionType: 'CONTRIBUTOR_REWARD',
       },
       orderBy: [{ amount: 'desc' }],
     });
 
-    const totalPointsAgg = await prisma.txDntToken.aggregate({
-      where: { transactionType: 'STAKE', createdEpoch: { lte: epoch } },
+    const totalPointsAgg = await prisma.txDaoToken.aggregate({
+      where: { transactionType: 'STAKE', epoch: { lte: epoch } },
       sum: { amount: true },
     });
     const totalPoints = Math.abs(Number(totalPointsAgg.sum.amount));

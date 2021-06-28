@@ -2,43 +2,43 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 async function protocol() {
-  await prisma.txProtocol.upsert({
-    where: { epochNumber: 1 },
+  await prisma.txDao.upsert({
+    where: { epoch: 1 },
     update: {},
     create: {
-      epochNumber: 1,
-      dntWithdrawFee: 1,
-      usdcWithdrawFee: 1,
-      dntEpochRewardIssuanceAmount: 1000000,
-      dntRewardDistributions: {
+      epoch: 1,
+      dtWithdrawFee: 1,
+      ltWithdrawFee: 1,
+      dtIssuanceAmount: 1000000,
+      dtDistributions: {
         contributors: 0.5,
         liquidityProviders: 0.5
       }
     },
   })
-  await prisma.txProtocol.upsert({
-    where: { epochNumber: 2 },
+  await prisma.txDao.upsert({
+    where: { epoch: 2 },
     update: {},
     create: {
-      epochNumber: 2,
-      dntWithdrawFee: 1,
-      usdcWithdrawFee: 1,
-      dntEpochRewardIssuanceAmount: 1000000,
-      dntRewardDistributions: {
+      epoch: 2,
+      dtWithdrawFee: 1,
+      ltWithdrawFee: 1,
+      dtIssuanceAmount: 1000000,
+      dtDistributions: {
         contributors: 0.5,
         liquidityProviders: 0.5
       }
     },
   })
-  await prisma.txProtocol.upsert({
-    where: { epochNumber: 3 },
+  await prisma.txDao.upsert({
+    where: { epoch: 3 },
     update: {},
     create: {
-      epochNumber: 3,
-      dntWithdrawFee: 1,
-      usdcWithdrawFee: 1,
-      dntEpochRewardIssuanceAmount: 1000000,
-      dntRewardDistributions: {
+      epoch: 3,
+      dtWithdrawFee: 1,
+      ltWithdrawFee: 1,
+      dtIssuanceAmount: 1000000,
+      dtDistributions: {
         contributors: 0.5,
         liquidityProviders: 0.5
       }

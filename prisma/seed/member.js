@@ -115,8 +115,8 @@ async function txMember() {
       ethAddress: members.fullyallocated.ethAddress,
       type: 'PERSONAL',
       alias: members.fullyallocated.alias,
-      createdEpoch: 0,
-      liquidityCapUsdc: 100000,
+      epoch: 0,
+      liquidityCap: 100000,
       liquidityCapEpoch: 100000,
     },
   });
@@ -128,8 +128,8 @@ async function txMember() {
       ethAddress: members.soma.ethAddress,
       type: 'PERSONAL',
       alias: members.soma.alias,
-      createdEpoch: 0,
-      liquidityCapUsdc: 100000,
+      epoch: 0,
+      liquidityCap: 100000,
       liquidityCapEpoch: 100000,
     },
   });
@@ -141,8 +141,8 @@ async function txMember() {
       ethAddress: members.zaz.ethAddress,
       type: 'PERSONAL',
       alias: members.zaz.alias,
-      createdEpoch: 0,
-      liquidityCapUsdc: 100000,
+      epoch: 0,
+      liquidityCap: 100000,
       liquidityCapEpoch: 100000,
     },
   });
@@ -154,8 +154,8 @@ async function txMember() {
       ethAddress: members.scottsgc.ethAddress,
       type: 'ENTITY',
       alias: members.scottsgc.alias,
-      createdEpoch: 0,
-      liquidityCapUsdc: 100000,
+      epoch: 0,
+      liquidityCap: 100000,
       liquidityCapEpoch: 100000,
     },
   });
@@ -165,8 +165,8 @@ async function txMember() {
       ethAddress: address,
       type: 'PERSONAL',
       alias: `user${i}`,
-      createdEpoch: (i % 3) + 1,
-      liquidityCapUsdc: 100000,
+      epoch: (i % 3) + 1,
+      liquidityCap: 100000,
       liquidityCapEpoch: 100000,
     });
   });

@@ -16,7 +16,7 @@ async function valueAllocate(from, weights, people, epoch) {
   });
 
   for (let i = 0; i < weights.length; i++) {
-    await prisma.txValueAllocation.create({
+    await prisma.txRewards.create({
       data: valueAllocations[i],
     });
   }

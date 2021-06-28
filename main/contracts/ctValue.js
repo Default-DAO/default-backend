@@ -11,7 +11,7 @@ const { prisma } = require('../../prisma/index');
 const { authMiddleware, checkSumAddress } = require('../../utils/auth');
 const { getDelegationsFromAmount } = require('./ctStake');
 
-router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
+router.post('/api/txRewards/send', authMiddleware, async (req, res) => {
   try {
     const {
       ethAddress,
@@ -21,7 +21,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
     // Add epoch to each allocation
     const epoch = await getCurrentEpoch();
 
-    const isDelegatedTo = await prisma.txStakeDelegation.findFirst({
+    const isDelegatedTo = await prisma.txElects.findFirst({
       where: { toEthAddress: ethAddress, epoch },
     });
 
@@ -48,7 +48,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
     );
 
     // Delete all existing allocations
-    await prisma.txValueAllocation.deleteMany({
+    await prisma.txRewards.deleteMany({
       where: {
         fromEthAddress: ethAddress,
         epoch,
@@ -56,13 +56,13 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
     });
 
     // Add new allocations
-    await prisma.txValueAllocation.createMany({
+    await prisma.txRewards.createMany({
       data: allocationsToWrite,
     });
 
     res.send({ result: { success: true, error: false } });
   } catch (err) {
-    console.log('Failed POST /api/txValueAllocation/send: ', err);
+    console.log('Failed POST /api/txRewards/send: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -73,7 +73,7 @@ router.post('/api/txValueAllocation/send', authMiddleware, async (req, res) => {
 });
 
 async function getAllocationsFromAmount(toAddress, epoch) {
-  const allocationsFrom = await prisma.txValueAllocation.findMany({
+  const allocationsFrom = await prisma.txRewards.findMany({
     where: {
       toEthAddress: toAddress,
       epoch,
@@ -83,7 +83,7 @@ async function getAllocationsFromAmount(toAddress, epoch) {
   let totalAmount = 0;
   for (let i = 0; i < allocationsFrom.length; i++) {
     const fromAddress = allocationsFrom[i].fromEthAddress;
-    const totalWeight = await prisma.txValueAllocation.aggregate({
+    const totalWeight = await prisma.txRewards.aggregate({
       where: {
         fromEthAddress: fromAddress,
         epoch,
@@ -99,7 +99,7 @@ async function getAllocationsFromAmount(toAddress, epoch) {
   return totalAmount;
 }
 
-router.get('/api/txValueAllocation/to', async (req, res) => {
+router.get('/api/txRewards/to', async (req, res) => {
   /*
     Retrieve allocations to other addresses from the requesting eth address.
     Parameters:
@@ -111,13 +111,13 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
     const epoch = Number(req.query.epoch);
 
     // calculate total DNT delegated to ethAddress
-    const stakesReceived = await prisma.txStakeDelegation.findMany({
+    const stakesReceived = await prisma.txElects.findMany({
       where: { toEthAddress: ethAddress, epoch },
     });
     const stakerAddresses = stakesReceived.map((stake) => stake.fromEthAddress);
 
     // construct total weight map of delegations this epoch
-    const totalWeights = await prisma.txStakeDelegation.groupBy({
+    const totalWeights = await prisma.txElects.groupBy({
       by: ['fromEthAddress'],
       where: { fromEthAddress: { in: stakerAddresses }, epoch },
       sum: { weight: true },
@@ -128,7 +128,7 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
     }, {});
 
     // constrcut total staked DNT map by stakerAddresses
-    const totalStakeAmts = await prisma.txDntToken.groupBy({
+    const totalStakeAmts = await prisma.txDaoToken.groupBy({
       by: ['ethAddress'],
       where: { ethAddress: { in: stakerAddresses }, transactionType: 'STAKE' },
       sum: { amount: true },
@@ -145,7 +145,7 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
     }, 0);
 
     // Retrieve allocations to other members from this ethAddress
-    const allocations = await prisma.txValueAllocation.findMany({
+    const allocations = await prisma.txRewards.findMany({
       where: { fromEthAddress: ethAddress, epoch },
       include: { toTxMember: true },
     });
@@ -165,7 +165,7 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log('Failed GET /api/txValueAllocation/to: ', err);
+    console.log('Failed GET /api/txRewards/to: ', err);
     res.status(400).send({
       result: {
         error: true,
@@ -175,7 +175,7 @@ router.get('/api/txValueAllocation/to', async (req, res) => {
   }
 });
 
-router.get('/api/txValueAllocation/from', async (req, res) => {
+router.get('/api/txRewards/from', async (req, res) => {
   /*
     Retrieve allocations to the requesting eth address from other addresses.
     Parameters:
@@ -189,7 +189,7 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
     const epoch = Number(req.query.epoch);
 
     // 1. Retrieve allocations to ethAddress from other members
-    const allocations = await prisma.txValueAllocation.findMany({
+    const allocations = await prisma.txRewards.findMany({
       where: { toEthAddress: ethAddress, epoch },
       include: { fromTxMember: true },
       take: PAGINATION_LIMIT,
@@ -200,10 +200,10 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
 
     // 2-a. retrieve all stakes to every allocator and the total weights each allocator has given
     const allocatorAddresses = allocations.map((alloc) => alloc.fromEthAddress);
-    const stakesToAllocators = await prisma.txStakeDelegation.findMany({
+    const stakesToAllocators = await prisma.txElects.findMany({
       where: { toEthAddress: { in: allocatorAddresses }, epoch },
     });
-    const totalStakeWeights = await prisma.txStakeDelegation.groupBy({
+    const totalStakeWeights = await prisma.txElects.groupBy({
       by: ['fromEthAddress'],
       where: { toEthAddress: { in: allocatorAddresses }, epoch },
       sum: { weight: true },
@@ -215,7 +215,7 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
 
     // 2-b. retrieve all staked dnt from every allocator has received (from delegations)
     const stakerAddresses = stakesToAllocators.map((stake) => stake.fromEthAddress);
-    const totalStakedDnt = await prisma.txDntToken.groupBy({
+    const totalStakedDnt = await prisma.txDaoToken.groupBy({
       by: ['ethAddress'],
       where: { ethAddress: { in: stakerAddresses }, transactionType: 'STAKE' },
       sum: { amount: true },
@@ -234,7 +234,7 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
       return acc;
     }, {});
 
-    const totalAllocWeights = await prisma.txValueAllocation.groupBy({
+    const totalAllocWeights = await prisma.txRewards.groupBy({
       by: ['fromEthAddress'],
       where: { fromEthAddress: { in: allocatorAddresses }, epoch },
       sum: { weight: true },
@@ -263,7 +263,7 @@ router.get('/api/txValueAllocation/from', async (req, res) => {
       },
     });
   } catch (err) {
-    console.log('Failed GET /api/txValueAllocation/from: ', err);
+    console.log('Failed GET /api/txRewards/from: ', err);
     res.status(400).send({
       result: {
         error: true,

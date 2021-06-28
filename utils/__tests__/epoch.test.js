@@ -19,36 +19,36 @@ const contributors = [{
   ethAddress: contributorOne,
   type: 'PERSONAL',
   alias: 'contributor_1',
-  createdEpoch: 0,
+  epoch: 0,
 }, {
   ethAddress: contributorTwo,
   type: 'PERSONAL',
   alias: 'contributor_2',
-  createdEpoch: 0,
+  epoch: 0,
 }];
 
 const lps = [{
   ethAddress: lpOne,
   type: 'ENTITY',
   alias: 'lq_1',
-  createdEpoch: 0,
+  epoch: 0,
 }, {
   ethAddress: lpTwo,
   type: 'PERSONAL',
   alias: 'lp_2',
-  createdEpoch: 0,
+  epoch: 0,
 }];
 
 async function createTestData() {
   const currentProtocol = {
-    epochNumber: 0,
-    dntWithdrawFee: 1000,
-    usdcWithdrawFee: 1000,
-    dntEpochRewardIssuanceAmount: 100,
+    epoch: 0,
+    dtWithdrawFee: 1000,
+    ltWithdrawFee: 1000,
+    dtIssuanceAmount: 100,
   };
 
   // create genesis epoch
-  await prisma.txProtocol.create({ data: currentProtocol });
+  await prisma.txDao.create({ data: currentProtocol });
 
   // create contributors
   await prisma.txMember.createMany({ data: contributors });
@@ -63,11 +63,11 @@ async function createTestData() {
   });
 
   // initial usdc liquidity provided by lps
-  await prisma.txUsdcToken.createMany({
+  await prisma.txLiquidityToken.createMany({
     data: lps.map(
       (lp) => ({
         ethAddress: lp.ethAddress,
-        createdEpoch: 0,
+        epoch: 0,
         transactionType: 'DEPOSIT',
         amount: 1000,
       }),
@@ -75,11 +75,11 @@ async function createTestData() {
   });
 
   // create inital contributor dnt
-  await prisma.txDntToken.createMany({
+  await prisma.txDaoToken.createMany({
     data: contributors.map(
       (c) => ({
         ethAddress: c.ethAddress,
-        createdEpoch: 0,
+        epoch: 0,
         transactionType: 'SWAP',
         amount: 1000,
       }),
@@ -87,11 +87,11 @@ async function createTestData() {
   });
 
   // contributors stake all of their DNT
-  await prisma.txDntToken.createMany({
+  await prisma.txDaoToken.createMany({
     data: contributors.map(
       (c) => ({
         ethAddress: c.ethAddress,
-        createdEpoch: 0,
+        epoch: 0,
         transactionType: 'STAKE',
         amount: 1000,
       }),
@@ -99,7 +99,7 @@ async function createTestData() {
   });
 
   // the two contributors delegate to each other
-  await prisma.txStakeDelegation.createMany({
+  await prisma.txElects.createMany({
     data:
           [{
             fromEthAddress: contributorOne,
@@ -115,7 +115,7 @@ async function createTestData() {
   });
 
   // the two contributors allocate to each other
-  await prisma.txValueAllocation.createMany({
+  await prisma.txRewards.createMany({
     data:
           [{
             fromEthAddress: contributorOne,
@@ -147,9 +147,9 @@ describe('constructRewardDistributions', () => {
     return done();
   });
 
-  test('should create simple dntRewardDistributions object', async () => {
-    const { epochNumber } = await getCurrentProtocol();
-    const distributions = await constructRewardDistributions(epochNumber);
+  test('should create simple dtDistributions object', async () => {
+    const { epoch } = await getCurrentProtocol();
+    const distributions = await constructRewardDistributions(epoch);
 
     // verify every lp and contributor appears in the distributions object
     expect(Object.keys(distributions).length === 4).toBe(true);
@@ -184,10 +184,10 @@ describe('incrementEpoch', () => {
     await incrementEpoch();
 
     const incrementedEpoch = await getCurrentEpoch();
-    expect(incrementedEpoch).toBe(currentProtocol.epochNumber + 1);
+    expect(incrementedEpoch).toBe(currentProtocol.epoch + 1);
   });
 
-  test('should create a simple dntRewardDistributions JSON object', async () => {
+  test('should create a simple dtDistributions JSON object', async () => {
     await incrementEpoch();
 
     const currentEpoch = await getCurrentEpoch();
@@ -195,35 +195,35 @@ describe('incrementEpoch', () => {
     const pastEpoch = currentEpoch - 1;
 
     const {
-      dntRewardDistributions,
-      dntEpochRewardIssuanceAmount,
-    } = await prisma.txProtocol.findFirst({
-      where: { epochNumber: pastEpoch },
+      dtDistributions,
+      dtIssuanceAmount,
+    } = await prisma.txDao.findFirst({
+      where: { epoch: pastEpoch },
     });
 
     // VERIFY LP REWARDS
     // expected LP reward === (new tokens / 2) * lp_ownership_percentage
     // in this test case each lp has contributed 50% so they get an equal share
-    const expectedLpReward = dntEpochRewardIssuanceAmount / 2 / lps.length;
+    const expectedLpReward = dtIssuanceAmount / 2 / lps.length;
 
     // verify LP rewards are caluclated accurately
-    expect(dntRewardDistributions[lpOne].lpReward).toBe(expectedLpReward);
-    expect(dntRewardDistributions[lpTwo].lpReward).toBe(expectedLpReward);
+    expect(dtDistributions[lpOne].lpReward).toBe(expectedLpReward);
+    expect(dtDistributions[lpTwo].lpReward).toBe(expectedLpReward);
 
     // VERIFY ALLOCATIONS
     // execpted contributor reward === (new tokens /2 ) * percentage of allocations received
-    const expectedContribReward = dntEpochRewardIssuanceAmount / 2 / contributors.length;
+    const expectedContribReward = dtIssuanceAmount / 2 / contributors.length;
 
     // verify contributor rewards are calculated accurately
     expect(
-      dntRewardDistributions[contributorOne].allocations[contributorTwo],
+      dtDistributions[contributorOne].allocations[contributorTwo],
     ).toBe(expectedContribReward);
     expect(
-      dntRewardDistributions[contributorTwo].allocations[contributorOne],
+      dtDistributions[contributorTwo].allocations[contributorOne],
     ).toBe(expectedContribReward);
 
     // VERIFY DELEGATIONS
-    const totalDntStaked = await prisma.txDntToken.aggregate({
+    const totalDntStaked = await prisma.txDaoToken.aggregate({
       where: {
         transactionType: 'STAKE',
       },
@@ -240,27 +240,27 @@ describe('incrementEpoch', () => {
 
     // verify delegations are calculated accurately
     expect(
-      dntRewardDistributions[contributorOne].delegations[contributorTwo],
+      dtDistributions[contributorOne].delegations[contributorTwo],
     ).toBe(exectedDelegationValue);
 
     expect(
-      dntRewardDistributions[contributorTwo].delegations[contributorOne],
+      dtDistributions[contributorTwo].delegations[contributorOne],
     ).toBe(exectedDelegationValue);
   });
 
-  test('should accurately write txDntToken rewards', async () => {
+  test('should accurately write txDaoToken rewards', async () => {
     await incrementEpoch();
     const currentEpoch = await getCurrentEpoch();
     const pastEpoch = currentEpoch - 1;
-    const { dntEpochRewardIssuanceAmount } = await getCurrentProtocol();
+    const { dtIssuanceAmount } = await getCurrentProtocol();
 
-    const expectedContribReward = dntEpochRewardIssuanceAmount / 2 / contributors.length;
-    const expectedLpReward = dntEpochRewardIssuanceAmount / 2 / lps.length;
+    const expectedContribReward = dtIssuanceAmount / 2 / contributors.length;
+    const expectedLpReward = dtIssuanceAmount / 2 / lps.length;
 
-    const contribOneRewards = await prisma.txDntToken.findFirst({
+    const contribOneRewards = await prisma.txDaoToken.findFirst({
       where: {
         ethAddress: contributorOne,
-        createdEpoch: pastEpoch,
+        epoch: pastEpoch,
         transactionType: 'CONTRIBUTOR_REWARD',
       },
       orderBy: {
@@ -269,10 +269,10 @@ describe('incrementEpoch', () => {
     });
     expect(contribOneRewards.amount.toNumber()).toBe(expectedContribReward);
 
-    const contribTwoRewards = await prisma.txDntToken.findFirst({
+    const contribTwoRewards = await prisma.txDaoToken.findFirst({
       where: {
         ethAddress: contributorTwo,
-        createdEpoch: pastEpoch,
+        epoch: pastEpoch,
         transactionType: 'CONTRIBUTOR_REWARD',
       },
       orderBy: {
@@ -281,10 +281,10 @@ describe('incrementEpoch', () => {
     });
     expect(contribTwoRewards.amount.toNumber()).toBe(expectedContribReward);
 
-    const lpOneRewards = await prisma.txDntToken.findFirst({
+    const lpOneRewards = await prisma.txDaoToken.findFirst({
       where: {
         ethAddress: lpOne,
-        createdEpoch: pastEpoch,
+        epoch: pastEpoch,
         transactionType: 'LP_REWARD',
       },
       orderBy: {
@@ -293,10 +293,10 @@ describe('incrementEpoch', () => {
     });
     expect(lpOneRewards.amount.toNumber()).toBe(expectedLpReward);
 
-    const lpTwoRewards = await prisma.txDntToken.findFirst({
+    const lpTwoRewards = await prisma.txDaoToken.findFirst({
       where: {
         ethAddress: lpTwo,
-        createdEpoch: pastEpoch,
+        epoch: pastEpoch,
         transactionType: 'LP_REWARD',
       },
       orderBy: {
@@ -307,19 +307,19 @@ describe('incrementEpoch', () => {
   });
 
   test('should handle allocations not being made', async () => {
-    const { epochNumber, dntEpochRewardIssuanceAmount } = await getCurrentProtocol();
+    const { epoch, dtIssuanceAmount } = await getCurrentProtocol();
     const contributorThree = '0xc042cc6FfC6D0f9c459793EeD1f0fb8EE34f6771';
     const contributorFour = '0xF2b24E09027816f265DAB32dCa84dd274c4122df';
     const newContributors = [{
       ethAddress: contributorThree,
       type: 'PERSONAL',
       alias: 'new_contributor_1',
-      createdEpoch: 0,
+      epoch: 0,
     }, {
       ethAddress: contributorFour,
       type: 'PERSONAL',
       alias: 'new_contributor_2',
-      createdEpoch: 0,
+      epoch: 0,
     }];
 
     await prisma.txMember.createMany({
@@ -331,25 +331,25 @@ describe('incrementEpoch', () => {
     });
 
     // new contribs stake
-    await prisma.txDntToken.create({
+    await prisma.txDaoToken.create({
       data: {
         ethAddress: contributorThree,
         amount: 1000, // same as the other contributors
-        createdEpoch: 0,
+        epoch: 0,
         transactionType: 'STAKE',
       },
     });
-    await prisma.txDntToken.create({
+    await prisma.txDaoToken.create({
       data: {
         ethAddress: contributorFour,
         amount: 7000, // 7x the entire network, net staked === 10,000
-        createdEpoch: 0,
+        epoch: 0,
         transactionType: 'STAKE',
       },
     });
 
     // new contribs delegate to each other
-    await prisma.txStakeDelegation.create({
+    await prisma.txElects.create({
       data: {
         fromEthAddress: contributorThree,
         toEthAddress: contributorFour,
@@ -357,7 +357,7 @@ describe('incrementEpoch', () => {
         epoch: 0,
       },
     });
-    await prisma.txStakeDelegation.create({
+    await prisma.txElects.create({
       data: {
         fromEthAddress: contributorFour,
         toEthAddress: contributorThree,
@@ -370,7 +370,7 @@ describe('incrementEpoch', () => {
     // we should expect to see only 20% allocations made because
     // the unallocated multiplier has not been applied yet
 
-    const distributions = await constructRewardDistributions(epochNumber);
+    const distributions = await constructRewardDistributions(epoch);
     let netLpReward = 0;
     let netContribReward = 0;
     Object.keys(distributions).forEach((ethAddress) => {
@@ -383,8 +383,8 @@ describe('incrementEpoch', () => {
       });
     });
 
-    const totalContribDntRewardAmt = dntEpochRewardIssuanceAmount * contribRewardPercent;
-    const totalLpDntRewardAmt = dntEpochRewardIssuanceAmount * lpRewardPercent;
+    const totalContribDntRewardAmt = dtIssuanceAmount * contribRewardPercent;
+    const totalLpDntRewardAmt = dtIssuanceAmount * lpRewardPercent;
 
     // only 2,000 out of 10,000 staked DNT was allocated. We should expect to
     // see 0.2
@@ -394,18 +394,18 @@ describe('incrementEpoch', () => {
     expect(netLpReward / totalLpDntRewardAmt).toBe(1);
 
     // the total percentage that has been allocated
-    // should be 60% of the dntEpochRewardIssuanceAmount
+    // should be 60% of the dtIssuanceAmount
     const totalDntRewarded = netLpReward + netContribReward;
-    expect(totalDntRewarded / dntEpochRewardIssuanceAmount).toBe(0.6);
+    expect(totalDntRewarded / dtIssuanceAmount).toBe(0.6);
 
     // increment epoch. this should correctly allocate all the tokens
     // even though only 20% allocations were made.
     await incrementEpoch();
 
-    const finishedProtocol = await prisma.txProtocol.findUnique({
-      where: { epochNumber },
+    const finishedProtocol = await prisma.txDao.findUnique({
+      where: { epoch },
     });
-    const finalDistributions = finishedProtocol.dntRewardDistributions;
+    const finalDistributions = finishedProtocol.dtDistributions;
     let finalLpRewards = 0;
     let finalContribRewards = 0;
     Object.keys(finalDistributions).forEach((ethAddress) => {
@@ -426,20 +426,20 @@ describe('incrementEpoch', () => {
     expect(finalLpRewards / totalLpDntRewardAmt).toBe(1);
 
     // the total percentage that has been allocated
-    // is 60% of the dntEpochRewardIssuanceAmount BUT due to the unallocation
+    // is 60% of the dtIssuanceAmount BUT due to the unallocation
     // multiplier we should see 100%.
     const finalDntRewarded = finalLpRewards + finalContribRewards;
-    expect(finalDntRewarded / dntEpochRewardIssuanceAmount).toBe(1);
+    expect(finalDntRewarded / dtIssuanceAmount).toBe(1);
 
     // finally verify that total new minted tokens were distributed to DB even
     // though only 20% of allocations were made
-    const totalContribTokens = await prisma.txDntToken.aggregate({
-      where: { createdEpoch: epochNumber, transactionType: 'CONTRIBUTOR_REWARD' },
+    const totalContribTokens = await prisma.txDaoToken.aggregate({
+      where: { epoch: epoch, transactionType: 'CONTRIBUTOR_REWARD' },
       sum: { amount: true },
     });
 
-    const totalLpRewards = await prisma.txDntToken.aggregate({
-      where: { createdEpoch: epochNumber, transactionType: 'LP_REWARD' },
+    const totalLpRewards = await prisma.txDaoToken.aggregate({
+      where: { epoch: epoch, transactionType: 'LP_REWARD' },
       sum: { amount: true },
     });
 
@@ -456,29 +456,29 @@ describe('incrementEpoch', () => {
     //    so since contributor 2 has allocated 100% to contributor 1
     //    contributor 1 should have 90% of all this epoch's contrib rewards.
 
-    const epochNumber = await getCurrentEpoch();
+    const epoch = await getCurrentEpoch();
 
-    await prisma.txDntToken.create({
+    await prisma.txDaoToken.create({
       data: {
         ethAddress: contributorOne,
         amount: 8000, // total net staked is now 10,000. contribOne has 9,000
-        createdEpoch: epochNumber,
+        epoch: epoch,
         transactionType: 'STAKE',
       },
     });
 
     await incrementEpoch();
 
-    const protocol = await prisma.txProtocol.findUnique({
-      where: { epochNumber },
+    const protocol = await prisma.txDao.findUnique({
+      where: { epoch },
     });
 
-    const distributions = protocol.dntRewardDistributions;
+    const distributions = protocol.dtDistributions;
 
     const contribOneRewards = distributions[contributorOne].allocations[contributorTwo];
 
     expect(contribOneRewards).toBe(
-      (protocol.dntEpochRewardIssuanceAmount * contribRewardPercent) * 0.90,
+      (protocol.dtIssuanceAmount * contribRewardPercent) * 0.90,
     );
   });
 });
@@ -500,12 +500,12 @@ describe('getCurrentEpoch', () => {
 
   test('should return current epoch', async () => {
     const currentProtocol = {
-      epochNumber: 0,
-      dntWithdrawFee: 1000,
-      usdcWithdrawFee: 1000,
-      dntEpochRewardIssuanceAmount: 100000,
+      epoch: 0,
+      dtWithdrawFee: 1000,
+      ltWithdrawFee: 1000,
+      dtIssuanceAmount: 100000,
     };
-    await prisma.txProtocol.create({ data: currentProtocol });
+    await prisma.txDao.create({ data: currentProtocol });
     await expect(getCurrentEpoch()).resolves.toBe(0);
   });
 });

@@ -14,7 +14,7 @@ async function stakeDelegate(from, weights, people, epoch) {
       epoch: epoch || 1,
     });
   });
-  await prisma.txStakeDelegation.createMany({
+  await prisma.txElects.createMany({
     data: stakeDelegations,
   });
 }

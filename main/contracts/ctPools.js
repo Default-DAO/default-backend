@@ -30,11 +30,11 @@ async function updateLiquidity(hash, amount) {
 
     const epoch = await getCurrentEpoch();
 
-    const epochDeposits = await prisma.txUsdcToken.aggregate({
+    const epochDeposits = await prisma.txLiquidityToken.aggregate({
       where: {
         ethAddress,
         transactionType: 'DEPOSIT',
-        createdEpoch: epoch,
+        epoch: epoch,
       },
       sum: {
         amount: true,
@@ -43,13 +43,13 @@ async function updateLiquidity(hash, amount) {
 
     const epochDepositsAmt = epochDeposits.sum.amount ? epochDeposits.sum.amount.toNumber() : 0;
 
-    const depositLimit = member.liquidityCapUsdc - epochDepositsAmt - amount;
+    const depositLimit = member.liquidityCap - epochDepositsAmt - amount;
 
     if (depositLimit >= 0) {
-      await prisma.txUsdcToken.create({
+      await prisma.txLiquidityToken.create({
         data: {
           ethAddress,
-          createdEpoch: epoch,
+          epoch: epoch,
           transactionType: 'DEPOSIT',
           amount,
         },
@@ -62,7 +62,7 @@ async function updateLiquidity(hash, amount) {
           ethAddress,
         },
         data: {
-          liquidityCapUsdc: 50000,
+          liquidityCap: 50000,
         },
       });
     }
@@ -157,11 +157,11 @@ router.post('/api/ctPools/addLiquidity/checkLimit', authMiddleware, async (req, 
 
     const epoch = await getCurrentEpoch();
 
-    const epochDeposits = await prisma.txUsdcToken.aggregate({
+    const epochDeposits = await prisma.txLiquidityToken.aggregate({
       where: {
         ethAddress,
         transactionType: 'DEPOSIT',
-        createdEpoch: epoch,
+        epoch: epoch,
       },
       sum: {
         amount: true,
@@ -170,7 +170,7 @@ router.post('/api/ctPools/addLiquidity/checkLimit', authMiddleware, async (req, 
 
     const epochDepositsAmt = epochDeposits.sum.amount ? epochDeposits.sum.amount.toNumber() : 0;
 
-    const depositLimit = member.liquidityCapUsdc - epochDepositsAmt - amount;
+    const depositLimit = member.liquidityCap - epochDepositsAmt - amount;
 
     if (depositLimit < 0) {
       res.send({
@@ -204,9 +204,9 @@ router.post('/api/ctPools/withdrawUsdc', authMiddleware, async (req, res) => {
       amount,
     } = req.body;
 
-    // STEP1: GET withdrawFeeUsdc from txProtocol and do amountUsdc - amountUsdc * withdrawFeeUsdc
+    // STEP1: GET withdrawFeeUsdc from txDao and do amountUsdc - amountUsdc * withdrawFeeUsdc
 
-    // STEP2: ADD negative transaction to txUsdcToken
+    // STEP2: ADD negative transaction to txLiquidityToken
   } catch (err) {
     res.status(400).send({
       result: {
@@ -226,9 +226,9 @@ router.post('/api/ctPools/withdrawDnt', authMiddleware, async (req, res) => {
 
     // STEP0: VALIDATE METAMASK SIGNATURE
 
-    // STEP1: GET withdrawFeeDnt from txProtocol and do amount - amount * withdrawFeeDnt
+    // STEP1: GET withdrawFeeDnt from txDao and do amount - amount * withdrawFeeDnt
 
-    // STEP2: ADD negative transaction to txDntTokens
+    // STEP2: ADD negative transaction to txDaoTokens
   } catch (err) {
     res.status(400).send({
       result: {
@@ -250,15 +250,15 @@ router.post('api/ctPools/swapTokens', authMiddleware, async (req, res) => {
 
     // STEP0. METAMASK AUTH
 
-    // STEP1. AGGREGATE DNT TOKEN AMOUNT FROM txDntTokens
+    // STEP1. AGGREGATE DNT TOKEN AMOUNT FROM txDaoTokens
 
-    // STEP2. AGGREGATE USDC TOKEN AMOUNT FROM txUsdcToken
+    // STEP2. AGGREGATE USDC TOKEN AMOUNT FROM txLiquidityToken
 
     // STEP3. CALCULATE RATIO OF DNT vs USDC
 
     // STEP4. CALCULATE HOW MUCH TOKEN AMOUNT amount IS IN OTHER TOKEN CURRENCY
 
-    // STEP5. SAVE TRANSACTION TO txDntTOkens and txUsdcToken ACCORDINGLY BASED ON token
+    // STEP5. SAVE TRANSACTION TO txDntTOkens and txLiquidityToken ACCORDINGLY BASED ON token
   } catch (err) {
     res.status(400).send({
       result: {
@@ -271,23 +271,23 @@ router.post('api/ctPools/swapTokens', authMiddleware, async (req, res) => {
 
 async function getUsdc(epoch) {
   // Usdc
-  const totalUsdcDeposited = await prisma.txUsdcToken.aggregate({
+  const totalUsdcDeposited = await prisma.txLiquidityToken.aggregate({
     where: epoch == undefined ? {
       transactionType: 'DEPOSIT',
     } : {
       transactionType: 'DEPOSIT',
-      createdEpoch: epoch,
+      epoch: epoch,
     },
     sum: {
       amount: true,
     },
   });
-  const totalUsdcWithdrawn = await prisma.txUsdcToken.aggregate({
+  const totalUsdcWithdrawn = await prisma.txLiquidityToken.aggregate({
     where: epoch == undefined ? {
       transactionType: 'WITHDRAW',
     } : {
       transactionType: 'WITHDRAW',
-      createdEpoch: epoch,
+      epoch: epoch,
     },
     sum: {
       amount: true,
@@ -301,8 +301,8 @@ async function getUsdc(epoch) {
 }
 
 async function getDnt(epoch) {
-  const where = epoch === undefined ? undefined : { createdEpoch: epoch };
-  const totalDnt = await prisma.txDntToken.aggregate({
+  const where = epoch === undefined ? undefined : { epoch: epoch };
+  const totalDnt = await prisma.txDaoToken.aggregate({
     where,
     sum: { amount: true },
   });
@@ -311,12 +311,12 @@ async function getDnt(epoch) {
 }
 
 async function getDntStaked(epoch) {
-  const totalDntStaked = await prisma.txDntToken.aggregate({
+  const totalDntStaked = await prisma.txDaoToken.aggregate({
     where: epoch == undefined ? {
       transactionType: 'STAKE',
     } : {
       transactionType: 'STAKE',
-      createdEpoch: epoch,
+      epoch: epoch,
     },
     sum: {
       amount: true,
@@ -358,7 +358,7 @@ router.get('/api/ctPools', async (req, res) => {
 
 async function getMemberUsdc(ethAddress) {
   // Usdc
-  const totalUsdcDeposited = await prisma.txUsdcToken.aggregate({
+  const totalUsdcDeposited = await prisma.txLiquidityToken.aggregate({
     where: {
       transactionType: 'DEPOSIT',
       ethAddress,
@@ -367,7 +367,7 @@ async function getMemberUsdc(ethAddress) {
       amount: true,
     },
   });
-  const totalUsdcWithdrawn = await prisma.txUsdcToken.aggregate({
+  const totalUsdcWithdrawn = await prisma.txLiquidityToken.aggregate({
     where: {
       transactionType: 'WITHDRAW',
       ethAddress,
@@ -386,7 +386,7 @@ async function getMemberUsdc(ethAddress) {
 
 async function getMemberDnt(ethAddress) {
   // Dnt
-  const totalDnt = await prisma.txDntToken.aggregate({
+  const totalDnt = await prisma.txDaoToken.aggregate({
     where: { ethAddress },
     sum: { amount: true },
   });
@@ -398,7 +398,7 @@ async function getMemberDnt(ethAddress) {
 
 async function getMemberDntStaked(ethAddress) {
   // Dnt Staked
-  const totalDntStaked = await prisma.txDntToken.aggregate({
+  const totalDntStaked = await prisma.txDaoToken.aggregate({
     where: {
       transactionType: 'STAKE',
       ethAddress,
@@ -444,9 +444,9 @@ router.get('/api/ctPools/member/dntHistory', async (req, res) => {
   try {
     const ethAddress = checkSumAddress(req.query.ethAddress);
     const skip = Number(req.query.skip || 0);
-    const result = await prisma.txDntToken.findMany({
+    const result = await prisma.txDaoToken.findMany({
       where: { ethAddress },
-      orderBy: [{ createdEpoch: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ epoch: 'desc' }, { createdAt: 'desc' }],
       take: PAGINATION_LIMIT,
       skip,
     });
@@ -467,9 +467,9 @@ router.get('/api/ctPools/member/usdcHistory', async (req, res) => {
   try {
     const ethAddress = checkSumAddress(req.query.ethAddress);
     const skip = Number(req.query.skip || 0);
-    const result = await prisma.txUsdcToken.findMany({
+    const result = await prisma.txLiquidityToken.findMany({
       where: { ethAddress },
-      orderBy: [{ createdEpoch: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ epoch: 'desc' }, { createdAt: 'desc' }],
       take: PAGINATION_LIMIT,
       skip,
     });
@@ -490,9 +490,9 @@ router.get('/api/ctPools/dnt/stakeHistory', async (req, res) => {
   try {
     const ethAddress = checkSumAddress(req.query.ethAddress);
     const skip = Number(req.query.skip || 0);
-    const result = await prisma.txDntToken.findMany({
+    const result = await prisma.txDaoToken.findMany({
       where: { ethAddress, transactionType: 'STAKE' },
-      orderBy: [{ createdEpoch: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ epoch: 'asc' }, { createdAt: 'desc' }],
       take: PAGINATION_LIMIT,
       skip,
     });
@@ -511,7 +511,7 @@ router.get('/api/ctPools/dnt/stakeHistory', async (req, res) => {
 
 router.get('/api/ctPools/dnt/stakeRanking', async (req, res) => {
   try {
-    const highestStakes = await prisma.txDntToken.groupBy({
+    const highestStakes = await prisma.txDaoToken.groupBy({
       by: ['ethAddress'],
       where: { transactionType: 'STAKE', txMember: { type: 'PERSONAL' } },
       sum: {

@@ -50,7 +50,7 @@ prisma.txMember.create({
   data: {
     ethAddress: '0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2',
     type: 'PERSONAL',
-    createdEpoch: 0,
+    epoch: 0,
     alias: 'z',
   }
 });
