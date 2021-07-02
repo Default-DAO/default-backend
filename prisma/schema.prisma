@@ -8,10 +8,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Api tables
-model ApiMember {
-  id                 Int      @id @default(autoincrement()) @map("id")
-  ethAddress         String   @unique @db.VarChar(42) @map("eth_address")
+// Tx tables
+model TxMember {
+  id                    Int        @id @default(autoincrement()) @map("id")
+  ethAddress            String     @id @db.VarChar(42) @map("eth_address")
+  type                  MemberType @map("type")
+  alias                 String?    @db.VarChar(42) @map("alias")
+  createdEpoch          Int        @map("created_epoch")
+  liquidityCapUsdc      Int?       @map("liquidity_cap_usdc")
+  liquidityCapEpochUsdc Int?       @map("liquidity_cap_epoch_usdc")
+
+  // previous ApiMember fields
   totalLiquidity     Decimal? @map("total_liquidity") @db.Decimal(20, 8)
   totalRewardsEarned Decimal? @map("total_rewards_earned") @db.Decimal(20, 8)
   netGain            Decimal? @map("net_gain") @db.Decimal(20, 8)
@@ -19,130 +26,164 @@ model ApiMember {
   claimed            Boolean  @default(false) @map("claimed")
   cap                Int?     @map("cap")
   nonce              String   @default(uuid()) @map("nonce")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // utility fields
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  txDaoId      Int @map("tx_dao_id")
+  txProtocolId Int @map("tx_protocol_id")
 
   // relations
-  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
-  @@map("api_member")
-}
-
-// Tx tables
-model TxMember {
-  ethAddress        String     @id @db.VarChar(42) @map("eth_address")
-  type              MemberType @map("type")
-  alias             String?    @db.VarChar(42) @map("alias")
-  createdEpoch      Int        @map("created_epoch")
-  liquidityCapUsdc  Int?       @map("liquidity_cap_usdc")
-  liquidityCapEpoch Int?       @map("liquidity_cap_epoch")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
-
-  // relations
-  apiMember            ApiMember?
+  txDao                TxDao
+  txProtocol           TxProtocol
   txDntTokens          TxDntToken[]
   txUsdcTokens         TxUsdcToken[]
-  fromValueAllocations TxValueAllocation[] @relation("TxMemberToTxValueAllocation_fromEthAddress") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
-  toValueAllocations   TxValueAllocation[] @relation("TxMemberToTxValueAllocation_toEthAddress")
-  fromStakeDelegations TxStakeDelegation[] @relation("TxMemberToTxStakeDelegation_fromEthAddress")
-  toStakeDelegations   TxStakeDelegation[] @relation("TxMemberToTxStakeDelegation_toEthAddress")
+  fromValueAllocations TxReward[]    @relation("TxMemberToTxReward_fromTxMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
+  toValueAllocations   TxReward[]    @relation("TxMemberToTxReward_toTxMember")
+  fromStakeDelegations TxElect[]     @relation("TxMemberToTxElect_fromTxMember")
+  toStakeDelegations   TxElect[]     @relation("TxMemberToTxElect_toTxMember")
 
-  @@index([createdEpoch], name: "tx_member_created_epoch")
+
+  // contraints
+  @@unique([txDaoId, ethAddress])
+  @@unique([txDaoId, alias])
+
+  // index
+  @@index([ethAddress], name: "ethAddress")
+  @@index([txDaoId], name: "tx_member_tx_dao_id")
+  @@index([txProtocolId], name: "tx_member_tx_protocol_id")
 
   @@map("tx_member")
 }
 
 model TxDntToken {
   id              Int                @id @default(autoincrement()) @map("id")
-  ethAddress      String             @db.VarChar(42) @map("eth_address")
-  createdEpoch    Int                @map("created_epoch")
   transactionType DntTransactionType @map("transaction_type")
   amount          Decimal            @map("amount") @db.Decimal(20, 8)
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
-  // relations
-  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
+  // scalar relation fields
+  txProtocolId Int @map("tx_protocol_id")
+  txMemberId   Int @map("tx_member_id")
 
-  @@index([createdEpoch], name: "tx_dnt_token_created_epoch")
-  @@index([ethAddress], name: "tx_dnt_token_eth_address")
+  // relations
+  txProtocol TxProtocol @relation(fields: [txProtocolId], references: [id])
+  txMember   TxMember   @relation(fields: [txMemberId], references: [id])
+
+  // indexes
+  @@index([txProtocolId], name: "tx_dnt_token_tx_protocol_id")
+  @@index([txMemberId], name: "tx_dnt_token_tx_member")
 
   @@map("tx_dnt_token")
 }
 
 model TxProtocol {
-  epochNumber                  Int      @id @map("epoch_number")
-  dntWithdrawFee               Int      @map("dnt_withdraw_fee")
-  usdcWithdrawFee              Int      @map("usdc_withdraw_fee")
-  dntEpochRewardIssuanceAmount Int      @map("dnt_epoch_reward_issuance_amount")
-  dntRewardDistributions       Json?    @map("dnt_reward_distributions")
-  createdAt                    DateTime @default(now()) @map("created_at")
-  updatedAt                    DateTime @updatedAt @map("updated_at")
+  id                  Int      @id @default(autoincrement()) @map("id")
+  epoch               Int      @id @map("epoch")
+  dntWithdrawFee      Int      @map("dnt_withdraw_fee")
+  usdcWithdrawFee     Int      @map("usdc_withdraw_fee")
+  mintAmt             Int      @map("dnt_epoch_reward_issuance_amount")
+  budgetAmt           Int      @map("budget_amt")
+  rewardDistributions Json?    @map("dnt_reward_distributions")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
+  // scalar relation fields
+  txDaoId Int @map("tx_dao_id")
+
+  // relations
+  txDao TxDao @relation("TxDaoToTxProtocol", fields: [txDaoId], references: [id])
+
+  // indexes
+  @@index([txDaoId])
 
   // dntRewardDistributions will be populated at the end of the epoch
   // and will contain the results of the epoch allocations.
   @@map("tx_protocol")
 }
 
-model TxStakeDelegation {
-  id             Int      @id @default(autoincrement()) @map("id")
-  fromEthAddress String   @db.VarChar(42) @map("from_eth_address")
-  toEthAddress   String   @db.VarChar(42) @map("to_eth_address")
-  epoch          Int      @map("epoch")
-  weight         Int      @map("weight")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+model TxElect {
+  id        Int      @id @default(autoincrement()) @map("id")
+  weight    Int      @map("weight")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  txProtocolId   Int @map("tx_protocol_id")
+  fromTxMemberId Int @map("from_tx_member_id")
+  toTxMemberId   Int @map("to_tx_member_id")
 
   // relations
-  fromTxMember TxMember @relation("TxMemberToTxStakeDelegation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
-  toTxMember   TxMember @relation("TxMemberToTxStakeDelegation_toEthAddress", fields: [toEthAddress], references: [ethAddress])
+  txProtocol   TxProtocol @relation("TxProtocolToTxElect", fields: [txProtocolId], references: [id])
+  fromTxMember TxMember   @relation("TxMemberToTxElect_fromTxMember", fields: [fromTxMemberId], references: [id])
+  toTxMember   TxMember   @relation("TxMemberToTxElect_toTxMember", fields: [fromTxMemberId], references: [id])
 
-  @@unique([fromEthAddress, toEthAddress, epoch])
-  @@index([epoch])
-  @@index([fromEthAddress])
-  @@index([toEthAddress])
+  // contraints
+  @@unique([txProtocolId, fromTxMemberId, toTxMemberId])
 
-  @@map("tx_stake_delegation")
+  // indexes
+  @@index([txProtocolId])
+  @@index([fromTxMemberId])
+  @@index([toTxMemberId])
+
+  @@map("tx_elect")
 }
 
 model TxUsdcToken {
   id              Int                 @id @default(autoincrement()) @map("id")
-  ethAddress      String              @db.VarChar(42) @map("eth_address")
-  createdEpoch    Int                 @map("created_epoch")
+  epoch           Int                 @map("epoch")
   transactionType UsdcTransactionType @map("transaction_type")
   amount          Decimal             @map("amount") @db.Decimal(20, 8)
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  // relations
-  txMember TxMember @relation(fields: [ethAddress], references: [ethAddress])
+  // scalar relation fields
+  txMemberId Int @map("tx_member_id")
 
-  @@index([createdEpoch], name: "tx_usdc_token_created_epoch")
-  @@index([ethAddress], name: "tx_usdc_token_eth_address")
+  // relations
+  txMember TxMember @relation("TxMember", fields: [txMemberId], references: [id])
+
+  // indexes
+  @@index([epoch], name: "tx_usdc_token_epoch")
+  @@index([txMemberId], name: "tx_usdc_token_tx_member_id")
 
   @@map("tx_usdc_token")
 }
 
-model TxValueAllocation {
-  id             Int      @id @default(autoincrement()) @map("id")
-  fromEthAddress String   @db.VarChar(42) @map("from_eth_address")
-  toEthAddress   String   @db.VarChar(42) @map("to_eth_address")
-  epoch          Int      @map("epoch")
-  weight         Int      @map("weight")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+model TxReward {
+  id        Int      @id @default(autoincrement()) @map("id")
+  weight    Int      @map("weight")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  txProtocolId   Int @map("tx_protocol_id")
+  fromTxMemberId Int @map("from_tx_member_id")
+  toTxMemberId   Int @map("to_tx_member_id")
 
   //relations
-  fromTxMember TxMember @relation("TxMemberToTxValueAllocation_fromEthAddress", fields: [fromEthAddress], references: [ethAddress])
-  toTxMember   TxMember @relation("TxMemberToTxValueAllocation_toEthAddress", fields: [toEthAddress], references: [ethAddress])
+  txProtocol   TxProtocol @relation(fields: [txProtocolId], references: [id])
+  fromTxMember TxMember   @relation("TxMemberToTxReward_fromTxMember")
+  toTxMember   TxMember   @relation("TxMemberToTxReward_toTxMember")
 
-  @@unique([fromEthAddress, toEthAddress, epoch], name: "TxValueAllocation_fromEthAddress_toEthAddress_epoch_key")
-  @@index([epoch], name: "tx_value_allocation_epoch")
-  @@index([fromEthAddress], name: "tx_value_allocation_from_eth_address")
-  @@index([toEthAddress], name: "tx_value_allocation_to_eth_address")
+  //contraints
+  @@unique([fromTxMemberId, toTxMemberId, txProtocolId], name: "TxReward_fromTxMemberId_toTxMemberId_epoch_key")
 
-  @@map("tx_value_allocation")
+  // indexes
+  @@index([fromTxMemberId], name: "tx_reward_from_tx_member_id")
+  @@index([toTxMemberId], name: "tx_reward_to_tx_member_id")
+  @@index([txProtocolId], name: "tx_protocol_id")
+
+  @@map("tx_reward")
+}
+
+model TxDao {
+  id          Int    @id @default(autoincrement()) @map("id")
+  name        String @map("name")
+  tokenSymbol String @map("token_symbol")
 }
 
 // enums
