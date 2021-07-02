@@ -186,6 +186,53 @@ model TxDao {
   tokenSymbol String @map("token_symbol")
 }
 
+// voting
+model Proposal {
+  id        Int      @id @default(autoincrement()) @map("id")
+  name      String   @map("name")
+  desc      String   @map("desc")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  txDaoId      Int @map("tx_dao_id")
+  txProtocolId Int @map("tx_protocol_id")
+
+  //relations
+  txDao      TxDao      @relation("TxDaoToTxProtocol", fields: [txDaoId], references: [id])
+  txProtocol TxProtocol @relation(fields: [txProtocolId], references: [id])
+
+  //indexes
+  @@index([txDaoId])
+  @@index([txProtocolId])
+
+  @@map("proposal")
+}
+
+model ProposalVote {
+  id        Int      @id @default(autoincrement()) @map("id")
+  inFavorOf Boolean  @map("in_favor_of")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  proposalId Int @map("proposal_id")
+  txMemberId Int @map("tx_member_id")
+
+  //relations
+  proposal Proposal @relation(fields: [proposalId], references: [id])
+  txMember TxMember @relation(fields: [txMemberId], references: [id])
+
+  // constraints
+  @@unique([proposalId, txMemberId])
+
+  //indexes
+  @@index([proposalId])
+  @@index([txMemberId])
+
+  @@map("proposal_vote")
+}
+
 // enums
 enum MemberType {
   ENTITY
