@@ -203,17 +203,19 @@ model TxDao {
 model Proposal {
   id        Int      @id @default(autoincrement()) @map("id")
   name      String   @map("name")
-  desc      String   @map("desc")
+  desc      String   @map("desc") //@todo text field
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txDaoId      Int @map("tx_dao_id")
-  txProtocolId Int @map("tx_protocol_id")
+  txDaoId                Int @map("tx_dao_id")
+  txProtocolResolutionId Int @map("tx_protocol_resolution_id")
+  proposerId             Int @map("proposer_id")
 
   //relations
   txDao      TxDao      @relation("TxDaoToTxProtocol", fields: [txDaoId], references: [id])
   txProtocol TxProtocol @relation(fields: [txProtocolId], references: [id])
+  proposer   TxMember   @relation(fields: [proposerId], references: [id])
 
   //indexes
   @@index([txDaoId])
