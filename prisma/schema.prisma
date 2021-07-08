@@ -11,7 +11,7 @@ datasource db {
 // Tx tables
 model TxMember {
   id                    Int        @id @default(autoincrement()) @map("id")
-  ethAddress            String     @id @db.VarChar(42) @map("eth_address")
+  ethAddress            String     @db.VarChar(42) @map("eth_address")
   type                  MemberType @map("type")
   alias                 String?    @db.VarChar(42) @map("alias")
   createdEpoch          Int        @map("created_epoch")
@@ -36,14 +36,14 @@ model TxMember {
   txProtocolId Int @map("tx_protocol_id")
 
   // relations
-  txDao                TxDao
-  txProtocol           TxProtocol
-  txDntTokens          TxDntToken[]
-  txUsdcTokens         TxUsdcToken[]
-  fromValueAllocations TxReward[]    @relation("TxMemberToTxReward_fromTxMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
-  toValueAllocations   TxReward[]    @relation("TxMemberToTxReward_toTxMember")
-  fromStakeDelegations TxElect[]     @relation("TxMemberToTxElect_fromTxMember")
-  toStakeDelegations   TxElect[]     @relation("TxMemberToTxElect_toTxMember")
+  txDao           TxDao
+  txProtocol      TxProtocol
+  txDntTokens     TxDntToken[]
+  txUsdcTokens    TxUsdcToken[]
+  fromAllocations TxAllocation[] @relation("TxMemberToTxAllocation_fromTxMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
+  toAllocations   TxAllocation[] @relation("TxMemberToTxAllocation_toTxMember")
+  fromDelegations TxDelegation[] @relation("TxMemberToTxDelegation_fromTxMember")
+  toDelegations   TxDelegation[] @relation("TxMemberToTxDelegation_toTxMember")
 
 
   // contraints
@@ -82,10 +82,10 @@ model TxDntToken {
 
 model TxProtocol {
   id                  Int      @id @default(autoincrement()) @map("id")
-  epoch               Int      @id @map("epoch")
+  epoch               Int      @map("epoch")
   dntWithdrawFee      Int      @map("dnt_withdraw_fee")
   usdcWithdrawFee     Int      @map("usdc_withdraw_fee")
-  mintAmt             Int      @map("dnt_epoch_reward_issuance_amount")
+  mintAmt             Int      @map("mint_amt")
   budgetAmt           Int      @map("budget_amt")
   rewardDistributions Json?    @map("dnt_reward_distributions")
   createdAt           DateTime @default(now()) @map("created_at")
@@ -97,7 +97,11 @@ model TxProtocol {
   // relations
   txDao TxDao @relation("TxDaoToTxProtocol", fields: [txDaoId], references: [id])
 
+  // contraints
+  @@unique([epoch, txDaoId])
+
   // indexes
+  @@index([epoch])
   @@index([txDaoId])
 
   // dntRewardDistributions will be populated at the end of the epoch
@@ -105,7 +109,7 @@ model TxProtocol {
   @@map("tx_protocol")
 }
 
-model TxElect {
+model TxDelegation {
   id        Int      @id @default(autoincrement()) @map("id")
   weight    Int      @map("weight")
   createdAt DateTime @default(now()) @map("created_at")
@@ -117,9 +121,9 @@ model TxElect {
   toTxMemberId   Int @map("to_tx_member_id")
 
   // relations
-  txProtocol   TxProtocol @relation("TxProtocolToTxElect", fields: [txProtocolId], references: [id])
-  fromTxMember TxMember   @relation("TxMemberToTxElect_fromTxMember", fields: [fromTxMemberId], references: [id])
-  toTxMember   TxMember   @relation("TxMemberToTxElect_toTxMember", fields: [fromTxMemberId], references: [id])
+  txProtocol   TxProtocol @relation("TxProtocolToTxDelegation", fields: [txProtocolId], references: [id])
+  fromTxMember TxMember   @relation("TxMemberToTxDelegation_fromTxMember", fields: [fromTxMemberId], references: [id])
+  toTxMember   TxMember   @relation("TxMemberToTxDelegation_toTxMember", fields: [fromTxMemberId], references: [id])
 
   // contraints
   @@unique([txProtocolId, fromTxMemberId, toTxMemberId])
@@ -129,7 +133,7 @@ model TxElect {
   @@index([fromTxMemberId])
   @@index([toTxMemberId])
 
-  @@map("tx_elect")
+  @@map("tx_delegation")
 }
 
 model TxUsdcToken {
@@ -141,10 +145,12 @@ model TxUsdcToken {
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txMemberId Int @map("tx_member_id")
+  txProtocolId Int @map("tx_protocol_id")
+  txMemberId   Int @map("tx_member_id")
 
   // relations
-  txMember TxMember @relation("TxMember", fields: [txMemberId], references: [id])
+  txProtocol TxProtocol @relation("TxProtocol", fields: [txProtocolId], references: [id])
+  txMember   TxMember   @relation("TxMember", fields: [txMemberId], references: [id])
 
   // indexes
   @@index([epoch], name: "tx_usdc_token_epoch")
@@ -153,7 +159,7 @@ model TxUsdcToken {
   @@map("tx_usdc_token")
 }
 
-model TxReward {
+model TxAllocation {
   id        Int      @id @default(autoincrement()) @map("id")
   weight    Int      @map("weight")
   createdAt DateTime @default(now()) @map("created_at")
@@ -166,24 +172,31 @@ model TxReward {
 
   //relations
   txProtocol   TxProtocol @relation(fields: [txProtocolId], references: [id])
-  fromTxMember TxMember   @relation("TxMemberToTxReward_fromTxMember")
-  toTxMember   TxMember   @relation("TxMemberToTxReward_toTxMember")
+  fromTxMember TxMember   @relation("TxMemberToTxAllocation_fromTxMember")
+  toTxMember   TxMember   @relation("TxMemberToTxAllocation_toTxMember")
 
   //contraints
-  @@unique([fromTxMemberId, toTxMemberId, txProtocolId], name: "TxReward_fromTxMemberId_toTxMemberId_epoch_key")
+  @@unique([fromTxMemberId, toTxMemberId, txProtocolId], name: "TxAllocation_fromTxMemberId_toTxMemberId_epoch_key")
 
   // indexes
-  @@index([fromTxMemberId], name: "tx_reward_from_tx_member_id")
-  @@index([toTxMemberId], name: "tx_reward_to_tx_member_id")
+  @@index([fromTxMemberId], name: "tx_allocation_from_tx_member_id")
+  @@index([toTxMemberId], name: "tx_allocation_to_tx_member_id")
   @@index([txProtocolId], name: "tx_protocol_id")
 
-  @@map("tx_reward")
+  @@map("tx_allocation")
 }
 
 model TxDao {
   id          Int    @id @default(autoincrement()) @map("id")
   name        String @map("name")
   tokenSymbol String @map("token_symbol")
+
+  //relations
+  txProtocols TxProtocol[] @relation("txProtocols")
+  txMembers   TxMember[]   @relation("TxMembers")
+  proposals   Proposal[]   @relation("proposals")
+
+  @@map("tx_dao")
 }
 
 // voting
