@@ -136,7 +136,7 @@ router.get('/api/ctVote/proposal/:id(\\d+)', async (req, res) => {
   }
 });
 
-router.post('/api/ctVote/create', async (req, res) => {
+router.post('/api/ctVote/create', authMiddleware, async (req, res) => {
   try {
     const { proposalId, inFavorOf, ethAddress } = req.body;
     const proposal = await prisma.proposal.findUnique(
