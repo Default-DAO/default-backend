@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["orderByAggregateGroup"]
+  previewFeatures = ["orderByAggregateGroup", "selectRelationCount"]
 }
 
 datasource db {
@@ -42,6 +42,8 @@ model TxMember {
   apiMember            ApiMember?
   txDntTokens          TxDntToken[]
   txUsdcTokens         TxUsdcToken[]
+  proposals            Proposal[]
+  votes                ProposalVote[]
   fromValueAllocations TxValueAllocation[] @relation("TxMemberToTxValueAllocation_fromEthAddress") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
   toValueAllocations   TxValueAllocation[] @relation("TxMemberToTxValueAllocation_toEthAddress")
   fromStakeDelegations TxStakeDelegation[] @relation("TxMemberToTxStakeDelegation_fromEthAddress")
@@ -143,6 +145,73 @@ model TxValueAllocation {
   @@index([toEthAddress], name: "tx_value_allocation_to_eth_address")
 
   @@map("tx_value_allocation")
+}
+
+// voting
+model Proposal {
+  // result field JSON object structure:
+  // {
+  //  netVotes: 500,
+  //  netVotesNeeded: 0,
+  //  totalAvailableVotes: 1000,
+  //  inFavorOfVotes: 750,
+  //  againstVotes: 250,
+  //  votes: [{
+  //    id: 1,
+  //    ethAddress: "asdfasdfdasdf",
+  //    alias: "zaz",
+  //    inFavorOf: true,
+  //    voteCount: 1000
+  //  }]
+  // }
+  id         Int      @id @default(autoincrement()) @map("id")
+  category   String   @map("category")
+  name       String   @map("name")
+  desc       String   @map("desc")
+  duration   Int      @map("duration") @default(1) // the amount of epochs this vote is active for
+  epoch      Int      @map("epoch")
+  isApproved Boolean  @map("is_approved") @default(false)
+  isActive   Boolean  @map("is_active") @default(false)
+  result     Json?    @map("result")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  proposerAddress String @db.VarChar(42) @map("proposer_address")
+
+  //relations
+  proposer TxMember       @relation(fields: [proposerAddress], references: [ethAddress])
+  votes    ProposalVote[]
+
+  //indexes
+  @@index([id])
+  @@index([epoch])
+
+  @@map("proposal")
+}
+
+model ProposalVote {
+  id        Int      @id @default(autoincrement()) @map("id")
+  inFavorOf Boolean  @map("in_favor_of")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  proposalId   Int    @map("proposal_id")
+  voterAddress String @db.VarChar(42) @map("voter_address")
+
+  //relations
+  proposal Proposal @relation(fields: [proposalId], references: [id])
+  voter    TxMember @relation(fields: [voterAddress], references: [ethAddress])
+
+  // constraints
+  @@unique([proposalId, voterAddress])
+
+  //indexes
+  @@index([proposalId])
+  @@index([voterAddress])
+
+  @@map("proposal_vote")
 }
 
 // enums
