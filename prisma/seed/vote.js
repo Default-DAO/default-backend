@@ -49,11 +49,10 @@ const generateVotes = async () => {
       isApproved: true,
       isActive: false,
       proposerAddress: members.fullyallocated.ethAddress,
-      result: { inFavorOfCount: 300000, againstCount: 100000 },
-
     },
 
-    { // in progress proposal
+    { // in progress proposal, this proposal should be closed next time
+      // closeExpiredProposals is called
       category: category3,
       name: 'In progress',
       desc: 'We should let xyz repurchase tokens at x price for y weeks becuase'

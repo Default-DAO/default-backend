@@ -76,4 +76,28 @@ const generateProposalResult = async (proposal) => {
   };
 };
 
-module.exports = { generateProposalResult };
+const closeExpiredProposals = async () => {
+  const currentEpoch = await prisma.txProtocol.findFirst({
+    orderBy: {
+      epochNumber: 'desc',
+    },
+  });
+  const activeProposals = await prisma.proposal.findMany({
+    where: { isActive: true },
+  });
+
+  // running these queries in a for loop because this function will only be used
+  // in async jobs so execution time is not such a big deal.
+  activeProposals.forEach(async (proposal) => {
+    if (proposal.epoch + proposal.duration <= currentEpoch.epochNumber) {
+      const result = await generateProposalResult(proposal);
+      const isApproved = result.netVotesNeeded === 0;
+      await prisma.proposal.update({
+        where: { id: proposal.id },
+        data: { isActive: false, isApproved, result },
+      });
+    }
+  });
+};
+
+module.exports = { generateProposalResult, closeExpiredProposals };
