@@ -2,6 +2,7 @@ const router = require('express').Router();
 const {
   BAD_REQUEST,
   VOTE_THRESHOLD,
+  NOT_AUTHORIZED
 } = require('../../config/keys');
 
 const { prisma } = require('../../prisma/index');
@@ -59,6 +60,8 @@ router.get('/api/ctVote/proposals', async (_, res) => {
 
     const proposals = rawProposals.map((p) => ({
       id: p.id,
+      name: p.name,
+      desc: p.desc,
       category: p.category,
       epoch: p.epoch,
       duration: p.duration,
@@ -89,9 +92,9 @@ router.get('/api/ctVote/proposals', async (_, res) => {
   }
 });
 
-router.get('/api/ctVote/proposal/:id(\\d+)', async (req, res) => {
+router.get('/api/ctVote/proposal', async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = Number(req.query.id);
     const proposal = await prisma.proposal.findUnique({
       where: { id },
       include: { proposer: true },
@@ -113,6 +116,7 @@ router.get('/api/ctVote/proposal/:id(\\d+)', async (req, res) => {
       netVotesNeeded = proposal.result.netVotesNeeded;
       votes = proposal.result.votes;
     }
+
     res.send({
       result: {
         netVotes,
@@ -167,6 +171,58 @@ router.post('/api/ctVote/create', authMiddleware, async (req, res) => {
     res.send({ result: { success: true, error: false } });
   } catch (err) {
     console.log('Failed POST /api/ctVote/create ', err);
+    res.status(400).send({
+      result: {
+        error: true,
+        errorCode: BAD_REQUEST,
+      },
+    });
+  }
+});
+
+router.post('/api/ctVote/proposal/create', authMiddleware, async (req, res) => {
+  try {
+    const {
+      category,
+      name,
+      desc,
+      duration,
+      ethAddress,
+    } = req.body;
+
+    const stakedDnt = await prisma.txDntToken.aggregate({
+      where: { ethAddress, transactionType: 'STAKE' },
+      sum: { amount: true },
+    });
+
+    if (stakedDnt < 100000) {
+      res.send({
+        result: {
+          error: true,
+          errorCode: NOT_AUTHORIZED,
+        }
+      });
+      return
+    }
+
+    const currentEpoch = await prisma.txProtocol.findFirst({
+      orderBy: {
+        epochNumber: 'desc',
+      },
+    });
+
+    await prisma.proposal.create({
+      category,
+      name,
+      desc,
+      epoch: currentEpoch.epochNumber,
+      duration,
+      proposerAddress: ethAddress,
+    });
+
+    res.send({ result: { success: true, error: false } });
+  } catch (err) {
+    console.log('Failed POST /api/ctVote/proposal/create ', err);
     res.status(400).send({
       result: {
         error: true,
