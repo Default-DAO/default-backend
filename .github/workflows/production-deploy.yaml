@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Generate deployment package
-        run: zip -r deploy.zip Procfile config/* index.js main/* package-lock.json package.json prisma/* utils/* .ebextensions/* ecosystem.config.js
+        run: zip -r deploy.zip Procfile config/* index.js main/* package-lock.json package.json prisma/* utils/* .ebextensions/* services/* ecosystem.config.js
        
       - name: Set version
         id: generate-uuid
