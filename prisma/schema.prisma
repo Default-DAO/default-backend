@@ -13,7 +13,6 @@ model Member {
   ethAddress            String     @db.VarChar(42) @map("eth_address")
   type                  MemberType @map("type")
   alias                 String?    @db.VarChar(42) @map("alias")
-  createdEpoch          Int        @map("created_epoch")
   liquidityCapUsdc      Int?       @map("liquidity_cap_usdc")
   liquidityCapEpochUsdc Int?       @map("liquidity_cap_epoch_usdc")
 
@@ -35,14 +34,16 @@ model Member {
   protocolId Int @map("protocol_id")
 
   // relations
-  dao             Dao
-  protocol        Protocol
+  dao             Dao            @relation(fields: [daoId], references: [id])
+  protocol        Protocol       @relation(fields: [protocolId], references: [id])
   dntTokens       DntToken[]
   usdcTokens      UsdcToken[]
-  fromAllocations Allocation[] @relation("MemberToAllocation_fromMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
-  toAllocations   Allocation[] @relation("MemberToAllocation_toMember")
-  fromDelegations Delegation[] @relation("MemberToDelegation_fromMember")
-  toDelegations   Delegation[] @relation("MemberToDelegation_toMember")
+  fromAllocations Allocation[]   @relation("MemberToAllocation_fromMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
+  toAllocations   Allocation[]   @relation("MemberToAllocation_toMember")
+  fromDelegations Delegation[]   @relation("MemberToDelegation_fromMember")
+  toDelegations   Delegation[]   @relation("MemberToDelegation_toMember")
+  proposals       Proposal[]
+  votes           ProposalVote[]
 
 
   // contraints
@@ -94,7 +95,8 @@ model Protocol {
   daoId Int @map("dao_id")
 
   // relations
-  dao Dao @relation("DaoToProtocol", fields: [daoId], references: [id])
+  dao       Dao        @relation("DaoToProtocol", fields: [daoId], references: [id])
+  proposals Proposal[]
 
   // contraints
   @@unique([epoch, daoId])
@@ -115,11 +117,13 @@ model Delegation {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
+  daoId        Int @map("dao_id")
   protocolId   Int @map("protocol_id")
   fromMemberId Int @map("from_member_id")
   toMemberId   Int @map("to_member_id")
 
   // relations
+  dao        Dao      @relation("Dao", fields: [daoId], references: [id])
   protocol   Protocol @relation("ProtocolToDelegation", fields: [protocolId], references: [id])
   fromMember Member   @relation("MemberToDelegation_fromMember", fields: [fromMemberId], references: [id])
   toMember   Member   @relation("MemberToDelegation_toMember", fields: [fromMemberId], references: [id])
@@ -137,7 +141,6 @@ model Delegation {
 
 model UsdcToken {
   id              Int                 @id @default(autoincrement()) @map("id")
-  epoch           Int                 @map("epoch")
   transactionType UsdcTransactionType @map("transaction_type")
   amount          Decimal             @map("amount") @db.Decimal(20, 8)
   createdAt       DateTime            @default(now()) @map("created_at")
@@ -152,7 +155,7 @@ model UsdcToken {
   member   Member   @relation("Member", fields: [memberId], references: [id])
 
   // indexes
-  @@index([epoch], name: "usdc_token_epoch")
+  @@index([protocolId], name: "usdc_token_protocol_id")
   @@index([memberId], name: "usdc_token_member_id")
 
   @@map("usdc_token")
@@ -165,17 +168,19 @@ model Allocation {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
+  daoId        Int @map("dao_id")
   protocolId   Int @map("protocol_id")
   fromMemberId Int @map("from_member_id")
   toMemberId   Int @map("to_member_id")
 
   //relations
+  dao        Dao      @relation(fields: [daoId], references: [id])
   protocol   Protocol @relation(fields: [protocolId], references: [id])
   fromMember Member   @relation("MemberToAllocation_fromMember")
   toMember   Member   @relation("MemberToAllocation_toMember")
 
   //contraints
-  @@unique([fromMemberId, toMemberId, protocolId], name: "Allocation_fromMemberId_toMemberId_epoch_key")
+  @@unique([fromMemberId, toMemberId, protocolId], name: "Allocation_fromMemberId_toMemberId_protocolId_key")
 
   // indexes
   @@index([fromMemberId], name: "allocation_from_member_id")
@@ -191,9 +196,9 @@ model Dao {
   tokenSymbol String @map("token_symbol")
 
   //relations
-  protocols Protocol[] @relation("Protocols")
-  members   Member[]   @relation("Members")
-  proposals Proposal[] @relation("Proposals")
+  protocols Protocol[]
+  members   Member[]
+  proposals Proposal[]
 
   @@map("dao")
 }
@@ -220,7 +225,6 @@ model Proposal {
   name       String   @map("name")
   desc       String   @map("desc")
   duration   Int      @map("duration") @default(1) // the amount of epochs this vote is active for
-  epoch      Int      @map("epoch")
   isApproved Boolean  @map("is_approved") @default(false)
   isActive   Boolean  @map("is_active") @default(false)
   result     Json?    @map("result")
@@ -228,17 +232,19 @@ model Proposal {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  daoId           Int    @map("dao_id")
-  proposerAddress String @db.VarChar(42) @map("proposer_address")
+  daoId      Int @map("dao_id")
+  proposerId Int @map("proposer_id")
+  protocolId Int @map("protocol_id")
 
   //relations
-  dao      Dao            @relation("DaoToProtocol", fields: [daoId], references: [id])
-  proposer Member         @relation(fields: [proposerAddress], references: [ethAddress])
+  dao      Dao            @relation(fields: [daoId], references: [id])
+  proposer Member         @relation(fields: [proposerId], references: [id])
+  protocol Protocol       @relation(fields: [protocolId], references: [id])
   votes    ProposalVote[]
 
   //indexes
   @@index([id])
-  @@index([epoch])
+  @@index([protocolId])
 
   @@map("proposal")
 }
@@ -250,19 +256,19 @@ model ProposalVote {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  proposalId   Int    @map("proposal_id")
-  voterAddress String @db.VarChar(42) @map("voter_address")
+  proposalId Int @map("proposal_id")
+  voterId    Int @map("voter_id")
 
   //relations
   proposal Proposal @relation(fields: [proposalId], references: [id])
-  voter    Member   @relation(fields: [voterAddress], references: [ethAddress])
+  voter    Member   @relation(fields: [voterId], references: [id])
 
   // constraints
-  @@unique([proposalId, voterAddress])
+  @@unique([proposalId, voterId])
 
   //indexes
   @@index([proposalId])
-  @@index([voterAddress])
+  @@index([voterId])
 
   @@map("proposal_vote")
 }
