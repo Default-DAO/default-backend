@@ -4,11 +4,11 @@ const prisma = new PrismaClient();
 
 const members = {
   fullyallocated: {
-    ethAddress: '0x02AAF5B44123a20C5565b6C8f557C41ec85b39D4',
+    ethAddress: '0xdec57E877005902cbc2fd38E6c16da2d2A18bFAC',
     alias: 'fullyallocated',
   },
   soma: {
-    ethAddress: '0x5672b4355c4Fd85c016d22d828f6A3875FdfcD43',
+    ethAddress: '0x60733275eb18d47f8A44BD360cD1cF9A1ee0e749',
     alias: 'soma',
   },
   zaz: {
@@ -16,7 +16,7 @@ const members = {
     alias: 'zaz',
   },
   scottsgc: {
-    ethAddress: '0xd7d9bce78aCeAd3EB9199097C0dB6F03A1f3082A',
+    ethAddress: '0xB249c8Bbb7D1e8833c3cd9dd9Ebe6aCE798a9D8C',
     alias: 'scottsgc',
   },
 };
