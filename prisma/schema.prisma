@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["orderByAggregateGroup"]
+  previewFeatures = ["orderByAggregateGroup", "selectRelationCount"]
 }
 
 datasource db {
@@ -8,8 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Tx tables
-model TxMember {
+model Member {
   id                    Int        @id @default(autoincrement()) @map("id")
   ethAddress            String     @db.VarChar(42) @map("eth_address")
   type                  MemberType @map("type")
@@ -32,33 +31,33 @@ model TxMember {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txDaoId      Int @map("tx_dao_id")
-  txProtocolId Int @map("tx_protocol_id")
+  daoId      Int @map("dao_id")
+  protocolId Int @map("protocol_id")
 
   // relations
-  txDao           TxDao
-  txProtocol      TxProtocol
-  txDntTokens     TxDntToken[]
-  txUsdcTokens    TxUsdcToken[]
-  fromAllocations TxAllocation[] @relation("TxMemberToTxAllocation_fromTxMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
-  toAllocations   TxAllocation[] @relation("TxMemberToTxAllocation_toTxMember")
-  fromDelegations TxDelegation[] @relation("TxMemberToTxDelegation_fromTxMember")
-  toDelegations   TxDelegation[] @relation("TxMemberToTxDelegation_toTxMember")
+  dao             Dao
+  protocol        Protocol
+  dntTokens       DntToken[]
+  usdcTokens      UsdcToken[]
+  fromAllocations Allocation[] @relation("MemberToAllocation_fromMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
+  toAllocations   Allocation[] @relation("MemberToAllocation_toMember")
+  fromDelegations Delegation[] @relation("MemberToDelegation_fromMember")
+  toDelegations   Delegation[] @relation("MemberToDelegation_toMember")
 
 
   // contraints
-  @@unique([txDaoId, ethAddress])
-  @@unique([txDaoId, alias])
+  @@unique([daoId, ethAddress])
+  @@unique([daoId, alias])
 
   // index
   @@index([ethAddress], name: "ethAddress")
-  @@index([txDaoId], name: "tx_member_tx_dao_id")
-  @@index([txProtocolId], name: "tx_member_tx_protocol_id")
+  @@index([daoId], name: "member_dao_id")
+  @@index([protocolId], name: "member_protocol_id")
 
-  @@map("tx_member")
+  @@map("member")
 }
 
-model TxDntToken {
+model DntToken {
   id              Int                @id @default(autoincrement()) @map("id")
   transactionType DntTransactionType @map("transaction_type")
   amount          Decimal            @map("amount") @db.Decimal(20, 8)
@@ -66,21 +65,21 @@ model TxDntToken {
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txProtocolId Int @map("tx_protocol_id")
-  txMemberId   Int @map("tx_member_id")
+  protocolId Int @map("protocol_id")
+  memberId   Int @map("member_id")
 
   // relations
-  txProtocol TxProtocol @relation(fields: [txProtocolId], references: [id])
-  txMember   TxMember   @relation(fields: [txMemberId], references: [id])
+  protocol Protocol @relation(fields: [protocolId], references: [id])
+  member   Member   @relation(fields: [memberId], references: [id])
 
   // indexes
-  @@index([txProtocolId], name: "tx_dnt_token_tx_protocol_id")
-  @@index([txMemberId], name: "tx_dnt_token_tx_member")
+  @@index([protocolId], name: "dnt_token_protocol_id")
+  @@index([memberId], name: "dnt_token_member")
 
-  @@map("tx_dnt_token")
+  @@map("dnt_token")
 }
 
-model TxProtocol {
+model Protocol {
   id                  Int      @id @default(autoincrement()) @map("id")
   epoch               Int      @map("epoch")
   dntWithdrawFee      Int      @map("dnt_withdraw_fee")
@@ -92,51 +91,51 @@ model TxProtocol {
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txDaoId Int @map("tx_dao_id")
+  daoId Int @map("dao_id")
 
   // relations
-  txDao TxDao @relation("TxDaoToTxProtocol", fields: [txDaoId], references: [id])
+  dao Dao @relation("DaoToProtocol", fields: [daoId], references: [id])
 
   // contraints
-  @@unique([epoch, txDaoId])
+  @@unique([epoch, daoId])
 
   // indexes
   @@index([epoch])
-  @@index([txDaoId])
+  @@index([daoId])
 
   // dntRewardDistributions will be populated at the end of the epoch
   // and will contain the results of the epoch allocations.
-  @@map("tx_protocol")
+  @@map("protocol")
 }
 
-model TxDelegation {
+model Delegation {
   id        Int      @id @default(autoincrement()) @map("id")
   weight    Int      @map("weight")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txProtocolId   Int @map("tx_protocol_id")
-  fromTxMemberId Int @map("from_tx_member_id")
-  toTxMemberId   Int @map("to_tx_member_id")
+  protocolId   Int @map("protocol_id")
+  fromMemberId Int @map("from_member_id")
+  toMemberId   Int @map("to_member_id")
 
   // relations
-  txProtocol   TxProtocol @relation("TxProtocolToTxDelegation", fields: [txProtocolId], references: [id])
-  fromTxMember TxMember   @relation("TxMemberToTxDelegation_fromTxMember", fields: [fromTxMemberId], references: [id])
-  toTxMember   TxMember   @relation("TxMemberToTxDelegation_toTxMember", fields: [fromTxMemberId], references: [id])
+  protocol   Protocol @relation("ProtocolToDelegation", fields: [protocolId], references: [id])
+  fromMember Member   @relation("MemberToDelegation_fromMember", fields: [fromMemberId], references: [id])
+  toMember   Member   @relation("MemberToDelegation_toMember", fields: [fromMemberId], references: [id])
 
   // contraints
-  @@unique([txProtocolId, fromTxMemberId, toTxMemberId])
+  @@unique([protocolId, fromMemberId, toMemberId])
 
   // indexes
-  @@index([txProtocolId])
-  @@index([fromTxMemberId])
-  @@index([toTxMemberId])
+  @@index([protocolId])
+  @@index([fromMemberId])
+  @@index([toMemberId])
 
-  @@map("tx_delegation")
+  @@map("delegation")
 }
 
-model TxUsdcToken {
+model UsdcToken {
   id              Int                 @id @default(autoincrement()) @map("id")
   epoch           Int                 @map("epoch")
   transactionType UsdcTransactionType @map("transaction_type")
@@ -145,81 +144,101 @@ model TxUsdcToken {
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txProtocolId Int @map("tx_protocol_id")
-  txMemberId   Int @map("tx_member_id")
+  protocolId Int @map("protocol_id")
+  memberId   Int @map("member_id")
 
   // relations
-  txProtocol TxProtocol @relation("TxProtocol", fields: [txProtocolId], references: [id])
-  txMember   TxMember   @relation("TxMember", fields: [txMemberId], references: [id])
+  protocol Protocol @relation("Protocol", fields: [protocolId], references: [id])
+  member   Member   @relation("Member", fields: [memberId], references: [id])
 
   // indexes
-  @@index([epoch], name: "tx_usdc_token_epoch")
-  @@index([txMemberId], name: "tx_usdc_token_tx_member_id")
+  @@index([epoch], name: "usdc_token_epoch")
+  @@index([memberId], name: "usdc_token_member_id")
 
-  @@map("tx_usdc_token")
+  @@map("usdc_token")
 }
 
-model TxAllocation {
+model Allocation {
   id        Int      @id @default(autoincrement()) @map("id")
   weight    Int      @map("weight")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txProtocolId   Int @map("tx_protocol_id")
-  fromTxMemberId Int @map("from_tx_member_id")
-  toTxMemberId   Int @map("to_tx_member_id")
+  protocolId   Int @map("protocol_id")
+  fromMemberId Int @map("from_member_id")
+  toMemberId   Int @map("to_member_id")
 
   //relations
-  txProtocol   TxProtocol @relation(fields: [txProtocolId], references: [id])
-  fromTxMember TxMember   @relation("TxMemberToTxAllocation_fromTxMember")
-  toTxMember   TxMember   @relation("TxMemberToTxAllocation_toTxMember")
+  protocol   Protocol @relation(fields: [protocolId], references: [id])
+  fromMember Member   @relation("MemberToAllocation_fromMember")
+  toMember   Member   @relation("MemberToAllocation_toMember")
 
   //contraints
-  @@unique([fromTxMemberId, toTxMemberId, txProtocolId], name: "TxAllocation_fromTxMemberId_toTxMemberId_epoch_key")
+  @@unique([fromMemberId, toMemberId, protocolId], name: "Allocation_fromMemberId_toMemberId_epoch_key")
 
   // indexes
-  @@index([fromTxMemberId], name: "tx_allocation_from_tx_member_id")
-  @@index([toTxMemberId], name: "tx_allocation_to_tx_member_id")
-  @@index([txProtocolId], name: "tx_protocol_id")
+  @@index([fromMemberId], name: "allocation_from_member_id")
+  @@index([toMemberId], name: "allocation_to_member_id")
+  @@index([protocolId], name: "protocol_id")
 
-  @@map("tx_allocation")
+  @@map("allocation")
 }
 
-model TxDao {
+model Dao {
   id          Int    @id @default(autoincrement()) @map("id")
   name        String @map("name")
   tokenSymbol String @map("token_symbol")
 
   //relations
-  txProtocols TxProtocol[] @relation("txProtocols")
-  txMembers   TxMember[]   @relation("TxMembers")
-  proposals   Proposal[]   @relation("proposals")
+  protocols Protocol[] @relation("Protocols")
+  members   Member[]   @relation("Members")
+  proposals Proposal[] @relation("Proposals")
 
-  @@map("tx_dao")
+  @@map("dao")
 }
 
 // voting
 model Proposal {
-  id        Int      @id @default(autoincrement()) @map("id")
-  name      String   @map("name")
-  desc      String   @map("desc") //@todo text field
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  // result field JSON object structure:
+  // {
+  //  netVotes: 500,
+  //  netVotesNeeded: 0,
+  //  totalAvailableVotes: 1000,
+  //  inFavorOfVotes: 750,
+  //  againstVotes: 250,
+  //  votes: [{
+  //    id: 1,
+  //    ethAddress: "asdfasdfdasdf",
+  //    alias: "zaz",
+  //    inFavorOf: true,
+  //    voteCount: 1000
+  //  }]
+  // }
+  id         Int      @id @default(autoincrement()) @map("id")
+  category   String   @map("category")
+  name       String   @map("name")
+  desc       String   @map("desc")
+  duration   Int      @map("duration") @default(1) // the amount of epochs this vote is active for
+  epoch      Int      @map("epoch")
+  isApproved Boolean  @map("is_approved") @default(false)
+  isActive   Boolean  @map("is_active") @default(false)
+  result     Json?    @map("result")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  txDaoId                Int @map("tx_dao_id")
-  txProtocolResolutionId Int @map("tx_protocol_resolution_id")
-  proposerId             Int @map("proposer_id")
+  daoId           Int    @map("dao_id")
+  proposerAddress String @db.VarChar(42) @map("proposer_address")
 
   //relations
-  txDao      TxDao      @relation("TxDaoToTxProtocol", fields: [txDaoId], references: [id])
-  txProtocol TxProtocol @relation(fields: [txProtocolId], references: [id])
-  proposer   TxMember   @relation(fields: [proposerId], references: [id])
+  dao      Dao            @relation("DaoToProtocol", fields: [daoId], references: [id])
+  proposer Member         @relation(fields: [proposerAddress], references: [ethAddress])
+  votes    ProposalVote[]
 
   //indexes
-  @@index([txDaoId])
-  @@index([txProtocolId])
+  @@index([id])
+  @@index([epoch])
 
   @@map("proposal")
 }
@@ -231,19 +250,19 @@ model ProposalVote {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // scalar relation fields
-  proposalId Int @map("proposal_id")
-  txMemberId Int @map("tx_member_id")
+  proposalId   Int    @map("proposal_id")
+  voterAddress String @db.VarChar(42) @map("voter_address")
 
   //relations
   proposal Proposal @relation(fields: [proposalId], references: [id])
-  txMember TxMember @relation(fields: [txMemberId], references: [id])
+  voter    Member   @relation(fields: [voterAddress], references: [ethAddress])
 
   // constraints
-  @@unique([proposalId, txMemberId])
+  @@unique([proposalId, voterAddress])
 
   //indexes
   @@index([proposalId])
-  @@index([txMemberId])
+  @@index([voterAddress])
 
   @@map("proposal_vote")
 }

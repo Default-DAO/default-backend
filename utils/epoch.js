@@ -1,6 +1,7 @@
 const { _ } = require('lodash');
 const { prisma } = require('../prisma/index');
 const { round } = require('./tokenmath');
+const { closeExpiredProposals } = require('../services/vote');
 
 const genesisEpochDate = new Date('April 19, 2021 12:00:00');
 
@@ -319,6 +320,9 @@ async function incrementEpoch() {
       dntEpochRewardIssuanceAmount: currentProtocol.dntEpochRewardIssuanceAmount,
     },
   });
+
+  // STEP 7. CLOSE EXPIRED PROPOSALS
+  closeExpiredProposals();
 }
 
 module.exports = {

@@ -14,6 +14,7 @@ const protocol = require('./main/contracts/ctProtocol');
 const pools = require('./main/contracts/ctPools');
 const stake = require('./main/contracts/ctStake');
 const network = require('./main/contracts/ctNetwork');
+const vote = require('./main/contracts/ctVote');
 
 const { sendWrapped, wrappedError } = require('./utils/wrappedResponse');
 
@@ -41,6 +42,7 @@ app.use(protocol.router);
 app.use(pools.router);
 app.use(stake.router);
 app.use(network.router);
+app.use(vote.router);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console
