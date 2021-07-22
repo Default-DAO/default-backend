@@ -2,7 +2,7 @@ const router = require('express').Router();
 const {
   BAD_REQUEST,
   VOTE_THRESHOLD,
-  NOT_AUTHORIZED
+  NOT_AUTHORIZED,
 } = require('../../config/keys');
 
 const { prisma } = require('../../prisma/index');
@@ -21,8 +21,8 @@ router.get('/api/ctVote/proposals', async (_, res) => {
 
     // retrieve all active proposal ids
     const activeProposals = await prisma.proposal.findMany({
-      select: { id: true },
       where: { isActive: true },
+      include: { votes: true },
     });
     const activeProposalIds = activeProposals.reduce((acc, p) => {
       acc.push(p.id);
@@ -32,7 +32,8 @@ router.get('/api/ctVote/proposals', async (_, res) => {
     // if there are active proposals then calculate the current votes
     // and store the results in voteCountMap. If a proposal is inactive
     // we will have the results of the vote stored in proposal.result.
-    let voteCountMap = {};
+    const voteCountMap = {};
+    let voteWeightMap = {};
     if (activeProposalIds.length) {
       const voteWeightAgg = await prisma.txDntToken.groupBy({
         by: ['ethAddress'],
@@ -47,10 +48,21 @@ router.get('/api/ctVote/proposals', async (_, res) => {
         sum: { amount: true },
       });
 
-      voteCountMap = voteWeightAgg.reduce((acc, stake) => {
+      voteWeightMap = voteWeightAgg.reduce((acc, stake) => {
         acc[stake.ethAddress] = Number(stake.sum.amount);
         return acc;
       }, {});
+
+      activeProposals.forEach((p) => {
+        voteCountMap[p.id] = { inFavorOfCount: 0, againstCount: 0 };
+        p.votes.forEach((v) => {
+          if (v.inFavorOf) {
+            voteCountMap[p.id].inFavorOfCount += voteWeightMap[v.voterAddress];
+          } else {
+            voteCountMap[p.id].againstCount += voteWeightMap[v.voterAddress];
+          }
+        });
+      });
     }
 
     const rawProposals = await prisma.proposal.findMany({
@@ -69,8 +81,8 @@ router.get('/api/ctVote/proposals', async (_, res) => {
       proposerAlias: p.proposer.alias,
       isApproved: p.isApproved,
       isActive: p.isActive,
-      inFavorOfCount: p.isActive ? voteCountMap[p.id] : p.result.inFavorOfCount,
-      againstCount: p.isActive ? voteCountMap[p.id] : p.result.againstCount,
+      inFavorOfCount: p.isActive ? voteCountMap[p.id].inFavorOfCount : p.result.inFavorOfCount,
+      againstCount: p.isActive ? voteCountMap[p.id].againstCount : p.result.againstCount,
     }));
 
     res.send({
@@ -200,9 +212,9 @@ router.post('/api/ctVote/proposal/create', authMiddleware, async (req, res) => {
         result: {
           error: true,
           errorCode: NOT_AUTHORIZED,
-        }
+        },
       });
-      return
+      return;
     }
 
     const currentEpoch = await prisma.txProtocol.findFirst({
