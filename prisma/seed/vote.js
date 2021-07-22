@@ -173,21 +173,25 @@ const generateVotes = async () => {
       proposalId: rejectedProposal.id,
       voterAddress: members.zaz.ethAddress,
       alias: members.zaz.alias,
+      voteCount: 200000,
     }, {
       inFavorOf: false,
       proposalId: rejectedProposal.id,
       voterAddress: members.fullyallocated.ethAddress,
       alias: members.fullyallocated.alias,
+      voteCount: 99999.2,
     }, {
       inFavorOf: false,
       proposalId: rejectedProposal.id,
       voterAddress: members.scottsgc.ethAddress,
       alias: members.scottsgc.alias,
+      voteCount: 100000,
     }, {
       inFavorOf: false,
       proposalId: rejectedProposal.id,
       voterAddress: members.soma.ethAddress,
       alias: members.soma.alias,
+      voteCount: 1,
     }],
   };
 
@@ -202,21 +206,25 @@ const generateVotes = async () => {
       proposalId: rejectedProposal.id,
       voterAddress: members.zaz.ethAddress,
       alias: members.zaz.alias,
+      voteCount: 200000,
     }, {
       inFavorOf: true,
       proposalId: rejectedProposal.id,
       voterAddress: members.fullyallocated.ethAddress,
       alias: members.fullyallocated.alias,
+      voteCount: 99999.2,
     }, {
       inFavorOf: true,
       proposalId: rejectedProposal.id,
       voterAddress: members.scottsgc.ethAddress,
       alias: members.scottsgc.alias,
+      voteCount: 100000,
     }, {
       inFavorOf: false,
       proposalId: rejectedProposal.id,
       voterAddress: members.soma.ethAddress,
       alias: members.soma.alias,
+      voteCount: 1,
     }],
   };
 
