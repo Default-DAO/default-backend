@@ -57,9 +57,9 @@ router.get('/api/ctVote/proposals', async (_, res) => {
         voteCountMap[p.id] = { inFavorOfCount: 0, againstCount: 0 };
         p.votes.forEach((v) => {
           if (v.inFavorOf) {
-            voteCountMap[p.id].inFavorOfCount = voteWeightMap[v.voterAddress];
+            voteCountMap[p.id].inFavorOfCount += voteWeightMap[v.voterAddress];
           } else {
-            voteCountMap[p.id].againstCount = voteWeightMap[v.voterAddress];
+            voteCountMap[p.id].againstCount += voteWeightMap[v.voterAddress];
           }
         });
       });
