@@ -72,7 +72,13 @@ const generateProposalResult = async (proposal) => {
   const netVotesNeeded = totalVotesNeeded >= netVotes ? totalVotesNeeded - netVotes : 0;
 
   return {
-    netVotes, netVotesNeeded, totalAvailableVotes, votes, againstCount, inFavorOfCount,
+    netVotes,
+    netVotesNeeded,
+    totalAvailableVotes,
+    totalVotesNeeded,
+    votes,
+    againstCount,
+    inFavorOfCount,
   };
 };
 

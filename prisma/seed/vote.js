@@ -73,22 +73,22 @@ const generateVotes = async () => {
     ethAddress: members.zaz.ethAddress,
     createdEpoch: 5,
     transactionType: 'STAKE',
-    amount: 200000,
+    amount: -200000,
   }, {
     ethAddress: members.fullyallocated.ethAddress,
     createdEpoch: 5,
     transactionType: 'STAKE',
-    amount: 100000,
+    amount: -100000,
   }, {
     ethAddress: members.scottsgc.ethAddress,
     createdEpoch: 5,
     transactionType: 'STAKE',
-    amount: 100000,
+    amount: -100000,
   }, {
     ethAddress: members.soma.ethAddress,
     createdEpoch: 5,
     transactionType: 'STAKE',
-    amount: 1,
+    amount: -1,
   }];
 
   await prisma.txDntToken.createMany({

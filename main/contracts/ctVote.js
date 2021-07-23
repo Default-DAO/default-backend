@@ -3,6 +3,7 @@ const {
   BAD_REQUEST,
   VOTE_THRESHOLD,
   NOT_AUTHORIZED,
+  NO_STAKE_FOUND,
 } = require('../../config/keys');
 
 const { prisma } = require('../../prisma/index');
@@ -158,9 +159,23 @@ router.post('/api/ctVote/create', authMiddleware, async (req, res) => {
     const proposal = await prisma.proposal.findUnique(
       { where: { id: proposalId } },
     );
-
     if (!proposal.isActive) {
       throw new Error('Proposal is no longer active');
+    }
+
+    const stakedDnt = await prisma.txDntToken.aggregate({
+      where: { ethAddress, transactionType: 'STAKE' },
+      sum: { amount: true },
+    });
+    const stakeDntAmt = Math.abs(Number(stakedDnt.sum.amount));
+    if (!stakeDntAmt) {
+      res.status(400).send({
+        result: {
+          error: true,
+          errorCode: NO_STAKE_FOUND,
+        },
+      });
+      return;
     }
 
     await prisma.proposalVote.create({
@@ -173,7 +188,7 @@ router.post('/api/ctVote/create', authMiddleware, async (req, res) => {
 
     // check if this vote makes vote pass, if it does make vote inactive and passed
     const result = await generateProposalResult(proposal);
-    if (result.netVotes >= result.netVotesNeeded) {
+    if (result.netVotes >= result.totalVotesNeeded) {
       await prisma.proposal.update({
         where: { id: proposalId },
         data: { isActive: false, isApproved: true, result },
