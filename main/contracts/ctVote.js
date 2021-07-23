@@ -17,7 +17,7 @@ router.get('/api/ctVote/proposals', async (_, res) => {
       where: { transactionType: 'STAKE' },
       sum: { amount: true },
     });
-    const totalAvailableVotes = round(Number(totalStakedAgg.sum.amount));
+    const totalAvailableVotes = Math.abs(round(Number(totalStakedAgg.sum.amount)));
 
     // retrieve all active proposal ids
     const activeProposals = await prisma.proposal.findMany({
@@ -49,7 +49,7 @@ router.get('/api/ctVote/proposals', async (_, res) => {
       });
 
       voteWeightMap = voteWeightAgg.reduce((acc, stake) => {
-        acc[stake.ethAddress] = Number(stake.sum.amount);
+        acc[stake.ethAddress] = Math.abs(Number(stake.sum.amount));
         return acc;
       }, {});
 
