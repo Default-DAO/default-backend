@@ -28,7 +28,7 @@ const generateProposalResult = async (proposal) => {
     where: { transactionType: 'STAKE' },
     sum: { amount: true },
   });
-  const totalAvailableVotes = round(Number(totalStakedAgg.sum.amount));
+  const totalAvailableVotes = Math.abs(round(Number(totalStakedAgg.sum.amount)));
 
   const rawVotes = await prisma.proposalVote.findMany({
     where: { proposalId: proposal.id },
@@ -43,7 +43,7 @@ const generateProposalResult = async (proposal) => {
     sum: { amount: true },
   });
   const voteCountMap = voteWeightAgg.reduce((acc, stake) => {
-    acc[stake.ethAddress] = Number(stake.sum.amount);
+    acc[stake.ethAddress] = Math.abs(Number(stake.sum.amount));
     return acc;
   }, {});
 
