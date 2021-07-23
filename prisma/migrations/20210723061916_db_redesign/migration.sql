@@ -46,10 +46,10 @@ ALTER TABLE "proposal" DROP CONSTRAINT "proposal_proposer_address_fkey";
 ALTER TABLE "proposal_vote" DROP CONSTRAINT "proposal_vote_voter_address_fkey";
 
 -- DropIndex
-DROP INDEX "proposal_vote.proposal_id_voter_address_unique";
+DROP INDEX "proposal.epoch_index";
 
 -- DropIndex
-DROP INDEX "proposal.epoch_index";
+DROP INDEX "proposal_vote.proposal_id_voter_address_unique";
 
 -- DropIndex
 DROP INDEX "proposal_vote.voter_address_index";
@@ -101,9 +101,9 @@ CREATE TABLE "protocol" (
     "epoch" INTEGER NOT NULL,
     "dnt_withdraw_fee" INTEGER NOT NULL,
     "usdc_withdraw_fee" INTEGER NOT NULL,
-    "mint_amt" INTEGER NOT NULL,
-    "budget_amt" INTEGER NOT NULL,
-    "dnt_reward_distributions" JSONB,
+    "mint_amt" INTEGER,
+    "budget_amt" INTEGER,
+    "reward_distributions" JSONB,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "dao_id" INTEGER NOT NULL,
