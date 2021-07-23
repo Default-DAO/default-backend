@@ -8,6 +8,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Dao {
+  id          Int    @id @default(autoincrement()) @map("id")
+  name        String @map("name")
+  tokenSymbol String @map("token_symbol")
+
+  //relations
+  protocols   Protocol[]   @relation("ProtocolToDao")
+  members     Member[]     @relation("MemberToDao")
+  proposals   Proposal[]   @relation("DaoToProposal")
+  allocations Allocation[] @relation("AllocationToDao")
+  delegations Delegation[] @relation("DelegationToDao")
+
+  @@map("dao")
+}
+
+model Protocol {
+  id                  Int      @id @default(autoincrement()) @map("id")
+  epoch               Int      @map("epoch")
+  dntWithdrawFee      Int      @map("dnt_withdraw_fee")
+  usdcWithdrawFee     Int      @map("usdc_withdraw_fee")
+  mintAmt             Int?     @map("mint_amt")
+  budgetAmt           Int?     @map("budget_amt")
+  rewardDistributions Json?    @map("reward_distributions")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  daoId Int @map("dao_id")
+
+  // relations
+  dao         Dao          @relation("ProtocolToDao", fields: [daoId], references: [id])
+  members     Member[]     @relation("ProtocolToMember")
+  dntTokens   DntToken[]   @relation("ProtocolToDnt")
+  usdcTokens  UsdcToken[]  @relation("ProtocolToUsdc")
+  allocations Allocation[] @relation("ProtocolToAllocation")
+  delegations Delegation[] @relation("ProtocolToDelegation")
+  proposals   Proposal[]   @relation("ProtocolToProposal")
+
+  // contraints
+  @@unique([epoch, daoId])
+
+  // indexes
+  @@index([epoch])
+  @@index([daoId])
+
+  // dntRewardDistributions will be populated at the end of the epoch
+  // and will contain the results of the epoch allocations.
+  @@map("protocol")
+}
+
 model Member {
   id                    Int        @id @default(autoincrement()) @map("id")
   ethAddress            String     @db.VarChar(42) @map("eth_address")
@@ -34,16 +84,16 @@ model Member {
   protocolId Int @map("protocol_id")
 
   // relations
-  dao             Dao            @relation(fields: [daoId], references: [id])
-  protocol        Protocol       @relation(fields: [protocolId], references: [id])
-  dntTokens       DntToken[]
-  usdcTokens      UsdcToken[]
+  dao             Dao            @relation("MemberToDao", fields: [daoId], references: [id])
+  protocol        Protocol       @relation("ProtocolToMember", fields: [protocolId], references: [id])
+  dntTokens       DntToken[]     @relation("MemberToDnt")
+  usdcTokens      UsdcToken[]    @relation("MemberToUsdc")
   fromAllocations Allocation[]   @relation("MemberToAllocation_fromMember") // maybe sentValue... receivedValue... would be better than toValue... fromValue...
   toAllocations   Allocation[]   @relation("MemberToAllocation_toMember")
   fromDelegations Delegation[]   @relation("MemberToDelegation_fromMember")
   toDelegations   Delegation[]   @relation("MemberToDelegation_toMember")
-  proposals       Proposal[]
-  votes           ProposalVote[]
+  proposals       Proposal[]     @relation("MemberToProposal")
+  votes           ProposalVote[] @relation("MemberToVote")
 
 
   // contraints
@@ -56,58 +106,6 @@ model Member {
   @@index([protocolId], name: "member_protocol_id")
 
   @@map("member")
-}
-
-model DntToken {
-  id              Int                @id @default(autoincrement()) @map("id")
-  transactionType DntTransactionType @map("transaction_type")
-  amount          Decimal            @map("amount") @db.Decimal(20, 8)
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-
-  // scalar relation fields
-  protocolId Int @map("protocol_id")
-  memberId   Int @map("member_id")
-
-  // relations
-  protocol Protocol @relation(fields: [protocolId], references: [id])
-  member   Member   @relation(fields: [memberId], references: [id])
-
-  // indexes
-  @@index([protocolId], name: "dnt_token_protocol_id")
-  @@index([memberId], name: "dnt_token_member")
-
-  @@map("dnt_token")
-}
-
-model Protocol {
-  id                  Int      @id @default(autoincrement()) @map("id")
-  epoch               Int      @map("epoch")
-  dntWithdrawFee      Int      @map("dnt_withdraw_fee")
-  usdcWithdrawFee     Int      @map("usdc_withdraw_fee")
-  mintAmt             Int      @map("mint_amt")
-  budgetAmt           Int      @map("budget_amt")
-  rewardDistributions Json?    @map("dnt_reward_distributions")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-
-  // scalar relation fields
-  daoId Int @map("dao_id")
-
-  // relations
-  dao       Dao        @relation("DaoToProtocol", fields: [daoId], references: [id])
-  proposals Proposal[]
-
-  // contraints
-  @@unique([epoch, daoId])
-
-  // indexes
-  @@index([epoch])
-  @@index([daoId])
-
-  // dntRewardDistributions will be populated at the end of the epoch
-  // and will contain the results of the epoch allocations.
-  @@map("protocol")
 }
 
 model Delegation {
@@ -123,7 +121,7 @@ model Delegation {
   toMemberId   Int @map("to_member_id")
 
   // relations
-  dao        Dao      @relation("Dao", fields: [daoId], references: [id])
+  dao        Dao      @relation("DelegationToDao", fields: [daoId], references: [id])
   protocol   Protocol @relation("ProtocolToDelegation", fields: [protocolId], references: [id])
   fromMember Member   @relation("MemberToDelegation_fromMember", fields: [fromMemberId], references: [id])
   toMember   Member   @relation("MemberToDelegation_toMember", fields: [fromMemberId], references: [id])
@@ -139,28 +137,6 @@ model Delegation {
   @@map("delegation")
 }
 
-model UsdcToken {
-  id              Int                 @id @default(autoincrement()) @map("id")
-  transactionType UsdcTransactionType @map("transaction_type")
-  amount          Decimal             @map("amount") @db.Decimal(20, 8)
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-
-  // scalar relation fields
-  protocolId Int @map("protocol_id")
-  memberId   Int @map("member_id")
-
-  // relations
-  protocol Protocol @relation("Protocol", fields: [protocolId], references: [id])
-  member   Member   @relation("Member", fields: [memberId], references: [id])
-
-  // indexes
-  @@index([protocolId], name: "usdc_token_protocol_id")
-  @@index([memberId], name: "usdc_token_member_id")
-
-  @@map("usdc_token")
-}
-
 model Allocation {
   id        Int      @id @default(autoincrement()) @map("id")
   weight    Int      @map("weight")
@@ -174,10 +150,10 @@ model Allocation {
   toMemberId   Int @map("to_member_id")
 
   //relations
-  dao        Dao      @relation(fields: [daoId], references: [id])
-  protocol   Protocol @relation(fields: [protocolId], references: [id])
-  fromMember Member   @relation("MemberToAllocation_fromMember")
-  toMember   Member   @relation("MemberToAllocation_toMember")
+  dao        Dao      @relation("AllocationToDao", fields: [daoId], references: [id])
+  protocol   Protocol @relation("ProtocolToAllocation", fields: [protocolId], references: [id])
+  fromMember Member   @relation("MemberToAllocation_fromMember", fields: [fromMemberId], references: [id])
+  toMember   Member   @relation("MemberToAllocation_toMember", fields: [toMemberId], references: [id])
 
   //contraints
   @@unique([fromMemberId, toMemberId, protocolId], name: "Allocation_fromMemberId_toMemberId_protocolId_key")
@@ -190,20 +166,52 @@ model Allocation {
   @@map("allocation")
 }
 
-model Dao {
-  id          Int    @id @default(autoincrement()) @map("id")
-  name        String @map("name")
-  tokenSymbol String @map("token_symbol")
+// TOKENS
+model DntToken {
+  id              Int                @id @default(autoincrement()) @map("id")
+  transactionType DntTransactionType @map("transaction_type")
+  amount          Decimal            @map("amount") @db.Decimal(20, 8)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
 
-  //relations
-  protocols Protocol[]
-  members   Member[]
-  proposals Proposal[]
+  // scalar relation fields
+  protocolId Int @map("protocol_id")
+  memberId   Int @map("member_id")
 
-  @@map("dao")
+  // relations
+  protocol Protocol @relation("ProtocolToDnt", fields: [protocolId], references: [id])
+  member   Member   @relation("MemberToDnt", fields: [memberId], references: [id])
+
+  // indexes
+  @@index([protocolId], name: "dnt_token_protocol_id")
+  @@index([memberId], name: "dnt_token_member")
+
+  @@map("dnt_token")
 }
 
-// voting
+model UsdcToken {
+  id              Int                 @id @default(autoincrement()) @map("id")
+  transactionType UsdcTransactionType @map("transaction_type")
+  amount          Decimal             @map("amount") @db.Decimal(20, 8)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // scalar relation fields
+  protocolId Int @map("protocol_id")
+  memberId   Int @map("member_id")
+
+  // relations
+  protocol Protocol @relation("ProtocolToUsdc", fields: [protocolId], references: [id])
+  member   Member   @relation("MemberToUsdc", fields: [memberId], references: [id])
+
+  // indexes
+  @@index([protocolId], name: "usdc_token_protocol_id")
+  @@index([memberId], name: "usdc_token_member_id")
+
+  @@map("usdc_token")
+}
+
+// GOVERNANCE
 model Proposal {
   // result field JSON object structure:
   // {
@@ -237,10 +245,10 @@ model Proposal {
   protocolId Int @map("protocol_id")
 
   //relations
-  dao      Dao            @relation(fields: [daoId], references: [id])
-  proposer Member         @relation(fields: [proposerId], references: [id])
-  protocol Protocol       @relation(fields: [protocolId], references: [id])
-  votes    ProposalVote[]
+  dao      Dao            @relation("DaoToProposal", fields: [daoId], references: [id])
+  proposer Member         @relation("MemberToProposal", fields: [proposerId], references: [id])
+  protocol Protocol       @relation("ProtocolToProposal", fields: [protocolId], references: [id])
+  votes    ProposalVote[] @relation("ProposalToVote")
 
   //indexes
   @@index([id])
@@ -260,8 +268,8 @@ model ProposalVote {
   voterId    Int @map("voter_id")
 
   //relations
-  proposal Proposal @relation(fields: [proposalId], references: [id])
-  voter    Member   @relation(fields: [voterId], references: [id])
+  proposal Proposal @relation("ProposalToVote", fields: [proposalId], references: [id])
+  voter    Member   @relation("MemberToVote", fields: [voterId], references: [id])
 
   // constraints
   @@unique([proposalId, voterId])

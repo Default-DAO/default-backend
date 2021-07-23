@@ -19,8 +19,8 @@ async function main() {
   // await transactUsdc();
   // await allocateValue();
   // await delegateStake();
-  await replay();
-  await generateVotes();
+  // await replay();
+  // await generateVotes();
 }
 
 main().then(() => {
