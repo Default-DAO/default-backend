@@ -6,7 +6,7 @@ const {
   constructRewardDistributions,
   contribRewardPercent,
   lpRewardPercent,
-} = require('../epoch1');
+} = require('../epoch');
 const { clearDb } = require('../../prisma/utils');
 
 // test constants
@@ -14,6 +14,7 @@ const contributorOne = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const contributorTwo = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 const contributorThree = 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
 const contributorFour = 'DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD';
+const contributorFive = 'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
 const lpOne = 'E';
 const lpTwo = 'F';
 
@@ -91,7 +92,7 @@ async function createTestData() {
   await prisma.txDntToken.createMany({
     data: contributors.map(
       (c) => {
-        amt += 1000;
+        amt += 0;
         return {
           ethAddress: c.ethAddress,
           createdEpoch: 0,
@@ -107,7 +108,7 @@ async function createTestData() {
   await prisma.txDntToken.createMany({
     data: contributors.map(
       (c) => {
-        amt += 1000;
+        amt += 0;
         return {
           ethAddress: c.ethAddress,
           createdEpoch: 0,
@@ -118,33 +119,34 @@ async function createTestData() {
     ),
   });
 
-  // the four contributors delegate to each other
+  // the four contributors delegate to self
   await prisma.txStakeDelegation.createMany({
     data:
       [{
         fromEthAddress: contributorOne,
-        toEthAddress: contributorTwo,
+        toEthAddress: contributorOne,
         epoch: 0,
         weight: 1,
       }, {
         fromEthAddress: contributorTwo,
-        toEthAddress: contributorOne,
+        toEthAddress: contributorTwo,
         epoch: 0,
-        weight: 5,
+        weight: 1,
       }, {
         fromEthAddress: contributorThree,
-        toEthAddress: contributorFour,
-        epoch: 0,
-        weight: 3,
-      }, {
-        fromEthAddress: contributorFour,
         toEthAddress: contributorThree,
         epoch: 0,
-        weight: 3,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
       }],
   });
+}
 
-  // the two contributors allocate to each other
+async function createAllocationTest1() {
   await prisma.txValueAllocation.createMany({
     data:
       [{
@@ -181,6 +183,80 @@ async function createTestData() {
   });
 }
 
+async function createAllocationTest2() {
+  await prisma.txValueAllocation.createMany({
+    data:
+      // CONTRIBUTOR 1
+      [{
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorTwo,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorThree,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
+      },
+      // CONTRIBUTOR 2
+      {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorOne,
+        epoch: 0,
+        weight: 30,
+      }, {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorThree,
+        epoch: 0,
+        weight: 30,
+      }, {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
+      },
+      // CONTRIBUTOR THREE
+      {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorOne,
+        epoch: 0,
+        weight: 3,
+      }, {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorTwo,
+        epoch: 0,
+        weight: 3,
+      }, {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 2,
+      },
+      // CONTRIBUTOR FOUR
+      {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorOne,
+        epoch: 0,
+        weight: 9,
+      }, {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorTwo,
+        epoch: 0,
+        weight: 9,
+      }, {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorThree,
+        epoch: 0,
+        weight: 1,
+      }],
+  });
+}
+
 describe('constructRewardDistributions', () => {
   beforeEach(async () => {
     await clearDb();
@@ -197,9 +273,52 @@ describe('constructRewardDistributions', () => {
     return done();
   });
 
-  test('should create simple dntRewardDistributions object', async () => {
+  test('Should distribute contributor rewards with empty values', async () => {
     const { epochNumber } = await getCurrentProtocol();
+    await createAllocationTest1();
     const distributions = await constructRewardDistributions(epochNumber);
 
+    const contributorOneReward = 16.666666666666664;
+    const contributorTwoReward = 16.666666666666664;
+    const contributorThreeReward = 16.666666666666664;
+
+    expect(
+      Math.abs(distributions[contributorOne].contributorReward - contributorOneReward),
+    ).toBeLessThanOrEqual(0.00000000001);
+
+    expect(
+      Math.abs(distributions[contributorTwo].contributorReward - contributorTwoReward),
+    ).toBeLessThanOrEqual(0.00000000001);
+
+    expect(
+      Math.abs(distributions[contributorThree].contributorReward - contributorThreeReward),
+    ).toBeLessThanOrEqual(0.00000000001);
+  });
+
+  test('Should distribute contributor rewards without empty values', async () => {
+    const { epochNumber } = await getCurrentProtocol();
+    await createAllocationTest2();
+    const distributions = await constructRewardDistributions(epochNumber);
+
+    const contributorOneReward = 19.969116518743498;
+    const contributorTwoReward = 15.863665617848971;
+    const contributorThreeReward = 9.060128882257043;
+    const contributorFourReward = 5.107088981150489;
+
+    expect(
+      Math.abs(distributions[contributorOne].contributorReward - contributorOneReward),
+    ).toBeLessThanOrEqual(0.00000000001);
+
+    expect(
+      Math.abs(distributions[contributorTwo].contributorReward - contributorTwoReward),
+    ).toBeLessThanOrEqual(0.00000000001);
+
+    expect(
+      Math.abs(distributions[contributorThree].contributorReward - contributorThreeReward),
+    ).toBeLessThanOrEqual(0.00000000001);
+
+    expect(
+      Math.abs(distributions[contributorFour].contributorReward - contributorFourReward),
+    ).toBeLessThanOrEqual(0.00000000001);
   });
 });
