@@ -1,6 +1,7 @@
 const { _ } = require('lodash');
 const { prisma } = require('../prisma/index');
 const { round } = require('./tokenmath');
+const { closeExpiredProposals } = require('../services/vote');
 
 const genesisEpochDate = new Date('April 19, 2021 12:00:00');
 
@@ -161,10 +162,10 @@ async function constructRewardDistributions(epochNumber) {
   // Filter raters who don't have delegation power
   // Filter people who are not allocated by, people who allocated to less than 2 people
   // Note:
-  // Use Karken's votes when you don't have enough information:
+  // Use default votes (equal votes) when you don't have enough information:
   // 1. Somebody to only 1 person (degenerated case)
   // 2. If a pair of people was not allocated to by at least 2 people
-  // { A: {B: {C: 1} } } means A / B rated By C is 1 => since there's only C rating A/B, use Kraken
+  // { A: {B: {C: 1} } } means A / B rated By C is 1 => since there's only C rating A/B, use default
 
   let allocatedMembers = {};
   const filterInvalidAllocations = { ...allocationMap };
@@ -246,8 +247,11 @@ async function constructRewardDistributions(epochNumber) {
   // console.log("COMRELAVG: ", completeRelativeContributionsAvg)
 
   // STEP 6.
-  // Repeat step 4, except excluding one person at a time this time. 
-  // For example, for A => B /C, D => B / C, exclude D one time, and exclude A one time, and get averages for both.
+  // For members A, B, C, D
+  // To get information about B for B / C, we're now gonna get A / C and D / C and their averages,
+  // excluding B's opinions. For example, getting average of A / C would exclude opinions of B, A, C
+  // and only account for D's opinion in this case. We'll add the averages of A / C, D / C
+  // and get the sum, and save it into excludedRelativeContributionAvg map for { B: { C: sum }}
 
   const excludedRelativeContributionAvg = {};
   Object.keys(relativeContributionMap).forEach((excludedRatedMember) => {
@@ -257,7 +261,7 @@ async function constructRewardDistributions(epochNumber) {
         let average = 0;
         let total = 0;
         if (!(comparedMember in relativeContributionMap[ratedMember])) {
-          //If no data, use default value, which asserts that everybody did equal work
+          // If no data, use default value, which asserts that everybody did equal work
           average = 1;
         } else {
           const raters = Object.keys(relativeContributionMap[ratedMember][comparedMember]);
@@ -342,7 +346,7 @@ async function constructRewardDistributions(epochNumber) {
     dntRewardDistributions[person].contributorReward = eatenPie * contributorIssuanceDntAmt;
   });
 
-  // Artificial Kraken's split for the people without much info
+  // Artificial default split for the people without enough info
   const leftOverSplit = totalLeftOver / noInfoPeople.length;
   noInfoPeople.forEach((person) => {
     if (!dntRewardDistributions[person]) {
@@ -438,7 +442,11 @@ async function incrementEpoch() {
     },
   });
 
-  // STEP 7. BRING OVER PREVIOUS EPOCH'S STAKES TO THE NEXT EPOCH AS DEFAULT
+  // STEP 7. CLOSE EXPIRED PROPOSALS
+
+  closeExpiredProposals();
+
+  // STEP 8. BRING OVER PREVIOUS EPOCH'S STAKES TO THE NEXT EPOCH AS DEFAULT
 
   const previousDelegations = await prisma.txStakeDelegation.findMany({
     where: {
