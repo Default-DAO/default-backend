@@ -10,8 +10,7 @@ const lpRewardPercent = 0.50;
 
 const dntRewardDistributionObj = {
   lpReward: 0,
-  delegations: {},
-  allocations: {},
+  contributorReward: 0,
 };
 
 async function getCurrentProtocol() {
@@ -20,11 +19,6 @@ async function getCurrentProtocol() {
       epochNumber: 'desc',
     },
   });
-}
-
-async function getCurrentEpoch() {
-  const { epochNumber } = await getCurrentProtocol();
-  return epochNumber;
 }
 
 function getCurrentCycle() {
@@ -43,37 +37,12 @@ function isMonday() {
   return today.getDay() === 1;
 }
 
+async function getCurrentEpoch() {
+  const { epochNumber } = await getCurrentProtocol();
+  return epochNumber;
+}
+
 async function constructRewardDistributions(epochNumber) {
-  /*
-
-  Here is the structure for dntRewardsDistributions JSONobject.
-  This object will act like a recepit for all delegations and allocations
-  that happened over the epoch.
-
-  @todo maybe it would be easier if we provided delegations received and
-  allocations receivedd instead of delegations given and allocations received.
-  This was just the easiest way to write the transactions to the DB but if it causes
-  issues we can change it.
-
-  Example Object:
-    {
-      "0xACfCc092898B9BB277D60a13084233609c8011f7": {  // address
-        "lpReward": 10,  // 0xACf... received 10 DNT from providing liquidity
-        "allocations": {   // allocations this address has received
-
-          // 0xACfCc... received 45 DNT in allocations from 0x46d0...
-          "0x46d036e5685d9b30630b1526243ad37F4A5D3a0C": 45
-        },
-        "delegations": {  // delegations this address has given
-
-          // 0xACfCc... delegated 9000 DNT to 0x46d0...
-          "0x46d036e5685d9b30630b1526243ad37F4A5D3a0C": 9000
-        }
-      },
-      "0x46d036e5685d9b30630b1526243ad37F4A5D3a0C": {...}
-      "0xeADf09E02E64e9fcB565a6507fb3aA2DD24357b2": {...}
-    }
-  */
   const currentProtocol = await prisma.txProtocol.findUnique({
     where: { epochNumber },
   });
@@ -82,41 +51,18 @@ async function constructRewardDistributions(epochNumber) {
   // allocations and delegations that happened this epoch
   const dntRewardDistributions = {};
 
-  // this object will keep track of total dnt(trust) delegated to an address
-  // this will be used to determine allocation power
-  const trustMap = {};
-
   // contributors get 50% of new DNT minted
   const contributorIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount / 2;
 
   // lps get 50% of new DNT minted
   const lpIssuanceDntAmt = currentProtocol.dntEpochRewardIssuanceAmount / 2;
 
-  // construct a total weight map for delegations
-  const delegationWeightMap = {};
-  const totalDelWeights = await prisma.txStakeDelegation.groupBy({
-    by: ['fromEthAddress'],
-    where: { epoch: currentProtocol.epochNumber },
-    sum: { weight: true },
-  });
-  totalDelWeights.forEach((totalDelWeight) => {
-    const { fromEthAddress, sum } = totalDelWeight;
-    delegationWeightMap[fromEthAddress] = sum.weight;
-  });
-
-  // construct a total weight map for allocations
-  const allocationWeightMap = {};
-  const totalAllocWeights = await prisma.txValueAllocation.groupBy({
-    by: ['fromEthAddress'],
-    where: { epoch: currentProtocol.epochNumber },
-    sum: { weight: true },
-  });
-  totalAllocWeights.forEach((totalAllocWeight) => {
-    const { fromEthAddress, sum } = totalAllocWeight;
-    allocationWeightMap[fromEthAddress] = sum.weight;
-  });
-
-  // STEP1. CALCULATE DNT SHARES OF ALL MEMBERS BY AGGREGATING txDntTokens
+  // STEP 1.
+  // Get total DNT Staked for every member
+  // Get DNT delegated to other people for every member
+  // Calculate voting power for each member
+  // Delegate to self + other people's delegations
+  // Normalize voting powers in percentage relative to other members
 
   // Get total dnt staked
   // (minus the staked DNT of those who did not allocate)
@@ -136,80 +82,281 @@ async function constructRewardDistributions(epochNumber) {
   // construct network ownership map. The totalOwnershipPercent
   // will be used to calculate TRUST delegated to a user. TRUST will be
   // represented by a percentage (percentage of total trust delegated this epoch)
-  const netOwnershipMap = {};
+  const memberStakes = {};
   dntStakes.forEach((dntStake) => {
     const { ethAddress, sum } = dntStake;
     const absoluteSum = Math.abs(Number(sum.amount));
-    netOwnershipMap[ethAddress] = {
+    memberStakes[ethAddress] = {
       totalStakedDnt: absoluteSum,
       totalOwnershipPercent: absoluteSum / totalDntStakedAbs,
     };
   });
 
-  // STEP2. CALCULATE REWARDS DISTRIBUTION AND DIVIDE UP epochIssuance
+  // construct a total weight map for delegations
+  const delegationWeightMap = {};
+  const totalDelWeights = await prisma.txStakeDelegation.groupBy({
+    by: ['fromEthAddress'],
+    where: { epoch: currentProtocol.epochNumber },
+    sum: { weight: true },
+  });
+  totalDelWeights.forEach((totalDelWeight) => {
+    const { fromEthAddress, sum } = totalDelWeight;
+    delegationWeightMap[fromEthAddress] = sum.weight;
+  });
 
-  // populate raw dnt values into dntRewardDistributions
   const delegations = await prisma.txStakeDelegation.findMany({
     where: { epoch: currentProtocol.epochNumber },
   });
 
+  const netOwnershipMap = {};
   delegations.forEach((delegation) => {
     const { fromEthAddress, toEthAddress, weight } = delegation;
-    if (!netOwnershipMap[fromEthAddress]) {
+    if (!memberStakes[fromEthAddress]) {
       throw new Error(`${fromEthAddress} has attempted to delegate without staking`);
     }
-    if (!dntRewardDistributions[fromEthAddress]) {
-      dntRewardDistributions[fromEthAddress] = _.cloneDeep(
-        dntRewardDistributionObj,
-      );
-    }
+
     // percentage of total weight fromEthAddress delegated to toEthAddress
     const percentageDelegated = weight / delegationWeightMap[fromEthAddress];
 
     // percentage of fromEthAddress's total staked dnt that was delegated
     // to toEthAddress
-    const totalDntDelegated = netOwnershipMap[fromEthAddress].totalStakedDnt * percentageDelegated;
+    const delegatedDntAmt = memberStakes[fromEthAddress].totalStakedDnt * percentageDelegated;
 
-    // add the raw dnt value to trust map. this tracks total dnt delegated
-    // to user.
-    trustMap[toEthAddress] = (trustMap[toEthAddress] || 0) + totalDntDelegated;
-
-    // populate the dntRewardDistributions obj
-    dntRewardDistributions[fromEthAddress].delegations[toEthAddress] = round(totalDntDelegated);
+    if (!(toEthAddress in netOwnershipMap)) {
+      netOwnershipMap[toEthAddress] = 0;
+    }
+    netOwnershipMap[toEthAddress] += delegatedDntAmt;
   });
 
-  // populate allocations into dntRewardDistributions obj
+  // STEP 2.
+  // Map the allocation data
+
+  // construct a total weight map for allocations
+  const allocationWeightMap = {};
+  const totalAllocWeights = await prisma.txValueAllocation.groupBy({
+    by: ['fromEthAddress'],
+    where: { epoch: currentProtocol.epochNumber },
+    sum: { weight: true },
+  });
+
+  totalAllocWeights.forEach((totalAllocWeight) => {
+    const { fromEthAddress, sum } = totalAllocWeight;
+    allocationWeightMap[fromEthAddress] = sum.weight;
+  });
+
+  // map who gave what to whom for allocations
   const allocations = await prisma.txValueAllocation.findMany({
     where: { epoch: currentProtocol.epochNumber },
   });
 
+  const allocationMap = {};
   allocations.forEach((allocation) => {
-    const { fromEthAddress, weight, toEthAddress } = allocation;
-    if (!dntRewardDistributions[toEthAddress]) {
-      dntRewardDistributions[toEthAddress] = _.cloneDeep(
-        dntRewardDistributionObj,
-      );
+    const { fromEthAddress, toEthAddress, weight } = allocation;
+    if (!(fromEthAddress in allocationMap)) {
+      allocationMap[fromEthAddress] = {};
     }
-
-    // base case. if there is no trust (aka no DNT has been delegated to this user)
-    if (!trustMap[fromEthAddress]) {
-      throw new Error(
-        `${fromEthAddress} has attempted to allocate to ${toEthAddress} without being delegating to`,
-      );
-    }
-
-    // percentage of total weight fromEthAddress allocated to toEthAddress
-    const percentageAllocated = weight / allocationWeightMap[fromEthAddress];
-
-    // (percentage total ownership fromEthAddress has of all delegated dnt)
-    // * (percentage allocated of staked dnt from fromEthAddress to toEthAddress)
-    // * (newly minted DNT available for contributor rewards)
-    const totalDntAllocated = (trustMap[fromEthAddress] / totalDntStakedAbs)
-      * percentageAllocated
-      * contributorIssuanceDntAmt;
-
-    dntRewardDistributions[toEthAddress].allocations[fromEthAddress] = round(totalDntAllocated);
+    allocationMap[fromEthAddress][toEthAddress] = weight;
   });
+
+  // STEP 3:
+  // Filter raters who don't have delegation power
+  // Filter people who are not allocated by, people who allocated to less than 2 people
+  // Note:
+  // Use default votes (equal votes) when you don't have enough information:
+  // 1. Somebody to only 1 person (degenerated case)
+  // 2. If a pair of people was not allocated to by at least 2 people
+  // { A: {B: {C: 1} } } means A / B rated By C is 1 => since there's only C rating A/B, use default
+
+  let allocatedMembers = {};
+  const filterInvalidAllocations = { ...allocationMap };
+  Object.keys(allocationMap).forEach((ethAddress) => {
+    if (Object.keys(allocationMap[ethAddress]).length <= 1
+      || !(ethAddress in netOwnershipMap) || netOwnershipMap[ethAddress] <= 0) {
+      delete filterInvalidAllocations[ethAddress];
+      return;
+    }
+
+    allocatedMembers = { ...allocatedMembers, ...allocationMap[ethAddress] };
+  });
+
+  const filteredAllocationMap = { ...filterInvalidAllocations };
+  Object.keys(filterInvalidAllocations).forEach((ethAddress) => {
+    if (!(ethAddress in allocatedMembers)) {
+      delete filteredAllocationMap[ethAddress];
+    }
+  });
+
+  // console.log("FILT: ", filteredAllocationMap)
+
+  // STEP 4.
+  // For people A, B, C, D
+  // Calculate all relative contributions, calculate triplets for ALL: A => B / C, A => B / D, A => C / B ....
+
+  // { A: {B: {C: 1} } } means A / B rated By C is 1
+  const relativeContributionMap = {};
+  Object.keys(filteredAllocationMap).forEach((fromEthAddress) => {
+    if (Object.keys(filteredAllocationMap[fromEthAddress]).length <= 1) {
+      return;
+    }
+
+    Object.keys(filteredAllocationMap[fromEthAddress]).forEach((to1) => {
+      Object.keys(filteredAllocationMap[fromEthAddress]).forEach((to2) => {
+        if (to1 === to2) {
+          return;
+        }
+
+        if (!(to1 in relativeContributionMap)) {
+          relativeContributionMap[to1] = {};
+        }
+        if (!(to2 in relativeContributionMap[to1])) {
+          relativeContributionMap[to1][to2] = {};
+        }
+        relativeContributionMap[to1][to2][fromEthAddress] = allocationMap[fromEthAddress][to1] / allocationMap[fromEthAddress][to2];
+      });
+    });
+  });
+
+  // console.log("RELCON: ", relativeContributionMap)
+
+  // STEP 5.
+  // Calculate average of EVERYONE who makes opinion about someone. 
+  // For example, if A => B /C, D => B / C, get the average of the two.
+  // Average = SUM of relative contributions * individual voting power / (total voting power - voting powers of irrelevant people)
+
+  const completeRelativeContributionsAvg = {};
+  Object.keys(relativeContributionMap).forEach((ratedMember) => {
+    Object.keys(relativeContributionMap[ratedMember]).forEach((comparedMember) => {
+      let average = 0;
+      let total = 0;
+      Object.keys(relativeContributionMap[ratedMember][comparedMember]).forEach((rater) => {
+        const weight = relativeContributionMap[ratedMember][comparedMember][rater];
+        const raterOwnership = netOwnershipMap[rater];
+        average += weight * raterOwnership;
+        total += raterOwnership;
+      });
+
+      average /= total;
+
+      if (!(ratedMember in completeRelativeContributionsAvg)) {
+        completeRelativeContributionsAvg[ratedMember] = {};
+      }
+      completeRelativeContributionsAvg[ratedMember][comparedMember] = average;
+    });
+  });
+
+  // console.log("COMRELAVG: ", completeRelativeContributionsAvg)
+
+  // STEP 6.
+  // For members A, B, C, D
+  // To get information about B for B / C, we're now gonna get A / C and D / C and their averages,
+  // excluding B's opinions. For example, getting average of A / C would exclude opinions of B, A, C
+  // and only account for D's opinion in this case. We'll add the averages of A / C, D / C
+  // and get the sum, and save it into excludedRelativeContributionAvg map for { B: { C: sum }}
+
+  const excludedRelativeContributionAvg = {};
+  Object.keys(relativeContributionMap).forEach((excludedRatedMember) => {
+    Object.keys(relativeContributionMap[excludedRatedMember]).forEach((comparedMember) => {
+      Object.keys(relativeContributionMap).forEach((ratedMember) => {
+        if (ratedMember === excludedRatedMember || ratedMember === comparedMember) return;
+        let average = 0;
+        let total = 0;
+        if (!(comparedMember in relativeContributionMap[ratedMember])) {
+          // If no data, use default value, which asserts that everybody did equal work
+          average = 1;
+        } else {
+          const raters = Object.keys(relativeContributionMap[ratedMember][comparedMember]);
+
+          raters.forEach((rater) => {
+            if (rater === excludedRatedMember && raters.length > 1) return;
+
+            const weight = relativeContributionMap[ratedMember][comparedMember][rater];
+            const raterOwnership = netOwnershipMap[rater];
+            // console.log(weight, raterOwnership)
+            average += weight * raterOwnership;
+            total += raterOwnership;
+          });
+
+          average /= total;
+        }
+
+        if (!(excludedRatedMember in excludedRelativeContributionAvg)) {
+          excludedRelativeContributionAvg[excludedRatedMember] = {};
+        }
+        if (!(comparedMember in excludedRelativeContributionAvg[excludedRatedMember])) {
+          excludedRelativeContributionAvg[excludedRatedMember][comparedMember] = 0;
+        }
+        excludedRelativeContributionAvg[excludedRatedMember][comparedMember] += average;
+      });
+    });
+  });
+
+  // console.log("EXC: ", excludedRelativeContributionAvg)
+
+  // STEP 7.
+  // Calculate what each member gets from other people's pie
+  // To get what B gets from A's pie, get X and Y where
+  // X = average of the opinions of relative contributions of A relative to B
+  // Y = sum of averages of opinions of relative contributions of A relative to B excluding a third member
+  // 1 / (1 + X + Y)
+  // What A is allowed to take in B's pie
+
+  const pieBites = {};
+  const pieLeft = {};
+  Object.keys(completeRelativeContributionsAvg).forEach((A) => {
+    Object.keys(completeRelativeContributionsAvg[A]).forEach((B) => {
+      // console.log("AB< ", A, B)
+      const completeAvg = completeRelativeContributionsAvg[A][B];
+      const excludedAvg = excludedRelativeContributionAvg[A][B];
+      //A relative to B gets B's share of A's pie
+      if (!(B in pieBites)) {
+        pieBites[B] = 0;
+      }
+      const bite = 1 / (1 + completeAvg + excludedAvg);
+      // console.log("BITE: ", A, B, bite)
+      pieBites[B] += bite;
+
+      if (!(A in pieLeft)) {
+        pieLeft[A] = 1;
+      }
+      pieLeft[A] -= bite;
+    });
+  });
+
+  // STEP 8.
+  // For member A,
+  // X = aggregate of the bites A takes per everybody's pie
+  // Y = what's left in A's pie after everybody takes bites from A's pie (1 - Everybody's bites)
+  // What A deserves = (X + Y) / number of people
+  // Calculate this for everybody, and sum of all these adds up to 1.
+
+  const numberOfPeople = Object.keys(allocatedMembers).length;
+  const noInfoPeople = [];
+  let totalLeftOver = 1;
+  Object.keys(allocatedMembers).forEach((person) => {
+    if (!(person in pieBites)) {
+      noInfoPeople.push(person);
+      return;
+    }
+    // const leftPie = Math.max(0, pieLeft[person]);
+    const eatenPie = ((pieBites[person] + pieLeft[person]) / numberOfPeople);
+    totalLeftOver -= eatenPie;
+    if (!dntRewardDistributions[person]) {
+      dntRewardDistributions[person] = _.cloneDeep(dntRewardDistributionObj);
+    }
+    dntRewardDistributions[person].contributorReward = eatenPie * contributorIssuanceDntAmt;
+  });
+
+  // Artificial default split for the people without enough info
+  const leftOverSplit = totalLeftOver / noInfoPeople.length;
+  noInfoPeople.forEach((person) => {
+    if (!dntRewardDistributions[person]) {
+      dntRewardDistributions[person] = _.cloneDeep(dntRewardDistributionObj);
+    }
+    dntRewardDistributions[person].contributorReward = leftOverSplit * contributorIssuanceDntAmt;
+  });
+
+  // STEP 9.
+  // Distribute LP rewards
 
   // Get total nominal usdc in lp
   const totalUsdc = await prisma.txUsdcToken.aggregate({
@@ -235,6 +382,7 @@ async function constructRewardDistributions(epochNumber) {
 
     dntRewardDistributions[ethAddress].lpReward = round(lpRewardsDnt);
   });
+  // console.log(dntRewardDistributions);
 
   return dntRewardDistributions;
 }
@@ -244,27 +392,12 @@ async function incrementEpoch() {
   const dntRewardDistributions = await constructRewardDistributions(
     currentProtocol.epochNumber,
   );
-
-  // calculate unallocatedMultiplier
-  // this will be used to distribute unallocated DNT evenly
-  let totalDntAllocated = 0;
-  Object.keys(dntRewardDistributions).forEach((ethAddress) => {
-    const { allocations } = dntRewardDistributions[ethAddress];
-
-    Object.keys(allocations).forEach((fromEthAddress) => {
-      totalDntAllocated += allocations[fromEthAddress];
-    });
-  });
-  const percentAllocated = totalDntAllocated
-    / (currentProtocol.dntEpochRewardIssuanceAmount * contribRewardPercent);
-  const unallocatedMultipler = round((1 / (percentAllocated || 1)));
-
   // STEP 3. LP REWARDS: AGGREGATE SHARES FOR LPS
   // STEP 4. CONTRIBUTOR REWARDS: AGGREGATE SHARES FOR CONTRIBUTORS
   const contributorRewards = [];
   const lpRewards = [];
   Object.keys(dntRewardDistributions).forEach((ethAddress) => {
-    const { lpReward, allocations } = dntRewardDistributions[ethAddress];
+    const { lpReward, contributorReward } = dntRewardDistributions[ethAddress];
     if (lpReward) {
       lpRewards.push({
         ethAddress,
@@ -274,24 +407,12 @@ async function incrementEpoch() {
       });
     }
 
-    if (!_.isEmpty(allocations)) {
-      let totalReward = 0;
-      Object.keys(allocations).forEach((fromEthAddress) => {
-        // update dntRewardDistributions with the final value
-        const finalAllocation = allocations[fromEthAddress] * unallocatedMultipler;
-
-        // add the final allocation total to the running total
-        totalReward += finalAllocation;
-
-        // update the dntRewardDistributions object to reflect the final total
-        dntRewardDistributions[ethAddress].allocations[fromEthAddress] = finalAllocation;
-      });
-
+    if (contributorReward) {
       contributorRewards.push({
         ethAddress,
         createdEpoch: currentProtocol.epochNumber,
         transactionType: 'CONTRIBUTOR_REWARD',
-        amount: totalReward,
+        amount: contributorReward,
       });
     }
   });
@@ -322,7 +443,25 @@ async function incrementEpoch() {
   });
 
   // STEP 7. CLOSE EXPIRED PROPOSALS
+
   closeExpiredProposals();
+
+  // STEP 8. BRING OVER PREVIOUS EPOCH'S STAKES TO THE NEXT EPOCH AS DEFAULT
+
+  const previousDelegations = await prisma.txStakeDelegation.findMany({
+    where: {
+      epoch: currentProtocol.epochNumber,
+    },
+  });
+
+  const newDelegations = [];
+  previousDelegations.forEach((stake) => {
+    const newDelegation = { ...stake };
+    newDelegation.epoch = currentProtocol.epochNumber + 1;
+    newDelegations.push(newDelegation);
+  });
+
+  await prisma.txDntToken.createMany({ data: newDelegations });
 }
 
 module.exports = {
