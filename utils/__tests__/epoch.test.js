@@ -38,6 +38,11 @@ const contributors = [{
   type: 'PERSONAL',
   alias: 'contributor_4',
   createdEpoch: 0,
+}, {
+  ethAddress: contributorFive,
+  type: 'PERSONAL',
+  alias: 'contributor_5',
+  createdEpoch: 0,
 }];
 
 const lps = [{
@@ -140,6 +145,11 @@ async function createTestData() {
       }, {
         fromEthAddress: contributorFour,
         toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorFive,
+        toEthAddress: contributorFive,
         epoch: 0,
         weight: 1,
       }],
@@ -257,6 +267,101 @@ async function createAllocationTest2() {
   });
 }
 
+async function createAllocationTest3() {
+  await prisma.txValueAllocation.createMany({
+    data:
+      // CONTRIBUTOR 1
+      [{
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorTwo,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorThree,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorOne,
+        toEthAddress: contributorFive,
+        epoch: 0,
+        weight: 1,
+      },
+      // CONTRIBUTOR 2
+      {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorOne,
+        epoch: 0,
+        weight: 2,
+      }, {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorThree,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorTwo,
+        toEthAddress: contributorFive,
+        epoch: 0,
+        weight: 1,
+      },
+      // CONTRIBUTOR THREE
+      {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorOne,
+        epoch: 0,
+        weight: 2,
+      }, {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorTwo,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorFour,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorThree,
+        toEthAddress: contributorFive,
+        epoch: 0,
+        weight: 1,
+      },
+      // CONTRIBUTOR FOUR
+      {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorOne,
+        epoch: 0,
+        weight: 2,
+      }, {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorTwo,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorThree,
+        epoch: 0,
+        weight: 1,
+      }, {
+        fromEthAddress: contributorFour,
+        toEthAddress: contributorFive,
+        epoch: 0,
+        weight: 1,
+      }],
+  });
+}
+
+
 describe('constructRewardDistributions', () => {
   beforeEach(async () => {
     await clearDb();
@@ -320,5 +425,33 @@ describe('constructRewardDistributions', () => {
     expect(
       Math.abs(distributions[contributorFour].contributorReward - contributorFourReward),
     ).toBeLessThanOrEqual(0.00000000001);
+  });
+
+  test('Includes no opinion member', async () => {
+    const { epochNumber } = await getCurrentProtocol();
+    await createAllocationTest3();
+    const distributions = await constructRewardDistributions(epochNumber);
+
+    console.log(distributions)
+    // const contributorOneReward = 19.969116518743498;
+    // const contributorTwoReward = 15.863665617848971;
+    // const contributorThreeReward = 9.060128882257043;
+    // const contributorFourReward = 5.107088981150489;
+
+    // expect(
+    //   Math.abs(distributions[contributorOne].contributorReward - contributorOneReward),
+    // ).toBeLessThanOrEqual(0.00000000001);
+
+    // expect(
+    //   Math.abs(distributions[contributorTwo].contributorReward - contributorTwoReward),
+    // ).toBeLessThanOrEqual(0.00000000001);
+
+    // expect(
+    //   Math.abs(distributions[contributorThree].contributorReward - contributorThreeReward),
+    // ).toBeLessThanOrEqual(0.00000000001);
+
+    // expect(
+    //   Math.abs(distributions[contributorFour].contributorReward - contributorFourReward),
+    // ).toBeLessThanOrEqual(0.00000000001);
   });
 });
